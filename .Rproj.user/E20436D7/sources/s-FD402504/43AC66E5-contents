@@ -1,0 +1,109 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  warning = FALSE,
+  message = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# poEMirt
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+`poEMirt` is an `R` pacakge that implements fast EM item response theory models for public opinion data analysis.
+Models include binary, categorical, binomial and multinomial outcomes along with static and dynamic estimation.
+Users can also estimate statistical uncertainty by parametric bootstrap or Gibbs Sampling.
+
+## Installation
+
+You can install the development version of `poEMirt` from [GitHub](https://github.com) with: 
+
+``` r
+# FILL THIS IN! HOW CAN PEOPLE INSTALL YOUR DEV PACKAGE?
+```
+
+## Usage
+
+### Multinomial outcome
+
+```{r}
+library(poEMirt)
+data("sim_data_dynamic")
+
+head(sim_data_dynamic)
+tail(sim_data_dynamic)
+
+# Convert into poEMirt-readable data
+data <- read_poEMirt(
+  data = sim_data_dynamic,
+  responses = paste0('y', 1:5),
+  i = "i",
+  j = "j",
+  t = "t"
+)
+
+# Fit the model
+fit <- poEMirt(
+  data = data,
+  model = "dynamic",
+  control = list(
+    verbose = 10,
+    constrant = 1
+  )
+)
+
+# Summarize the result
+summary(fit, parameter = "theta")
+```
+
+### Estimation of statistical uncertainty
+
+To estimate statistical uncertainty (e.g., standard deviation), you can use `poEMirt_uncertainty()`. In this function, you can choose *parametric bootstrap* ("bootstrap") or *Gibbs Sampling* ("gibbs").
+
+#### Bootstrap
+
+```{r}
+fit_boot <- poEMirt_uncertainty(
+  fit = fit,
+  method = "bootstrap",
+  seed = 1,
+  iter = 100,
+  control = list(
+    verbose = 10
+  )
+)
+
+summary(fit_boot, parameter = "theta", ci = 0.95)
+```
+
+#### Gibbs Sampling
+
+Using EM estimates as starting values of Gibbs Sampler. `control$PG_approx = TRUE` accelerates the implementation but is not recommended for small $n$ data (e.g., $n < 10$).
+
+```{r}
+fit_gibbs <- poEMirt_uncertainty(
+  fit = fit,
+  method = "gibbs",
+  seed = 1,
+  iter = 500,
+  control = list(
+    verbose = 50,
+    PG_approx = TRUE, 
+    warmup = 100,
+    thin = 5
+  )
+)
+
+summary(fit_gibbs, parameter = "theta", ci = 0.95)
+```
+

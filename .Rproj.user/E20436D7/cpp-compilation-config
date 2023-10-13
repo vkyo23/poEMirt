@@ -1,0 +1,22 @@
+{
+    "args": [
+        "-std=gnu++14",
+        "-I/Library/Frameworks/R.framework/Resources/include",
+        "-DNDEBUG",
+        "-I/usr/local/include",
+        "-fPIC",
+        "-I/Library/Frameworks/R.framework/Versions/4.2/Resources/library/Rcpp/include",
+        "-I/Library/Frameworks/R.framework/Versions/4.2/Resources/library/RcppArmadillo/include",
+        "-I/Library/Developer/CommandLineTools/usr/lib/clang/15.0.0/include",
+        "-I/usr/local/include",
+        "-I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1",
+        "-I/Library/Developer/CommandLineTools/usr/lib/clang/15.0.0/include",
+        "-I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include",
+        "-I/Library/Developer/CommandLineTools/usr/include"
+    ],
+    "pch": "RcppArmadillo",
+    "is_cpp": true,
+    "hash": "1693197945169709829816970982261697098226",
+    "compiler": "2435500940405727349",
+    "rversion": "4.2.0"
+}
