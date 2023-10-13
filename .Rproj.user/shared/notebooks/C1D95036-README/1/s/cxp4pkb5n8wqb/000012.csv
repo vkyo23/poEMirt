@@ -1,5 +1,0 @@
-"0","# Summarize the result
-summary(fit, parameter = ""theta"")
-"
-"2","* Summarizing following parameters: theta.
-"
