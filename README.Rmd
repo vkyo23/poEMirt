@@ -28,8 +28,8 @@ Users can also estimate statistical uncertainty by parametric bootstrap or Gibbs
 
 You can install the development version of `poEMirt` from [GitHub](https://github.com) with: 
 
-``` r
-# FILL THIS IN! HOW CAN PEOPLE INSTALL YOUR DEV PACKAGE?
+```{r, eval=FALSE}
+remotes::install_github("vkyo23/poEMirt")
 ```
 
 ## Usage
@@ -57,8 +57,7 @@ fit <- poEMirt(
   data = data,
   model = "dynamic",
   control = list(
-    verbose = 10,
-    constrant = 1
+    verbose = 10
   )
 )
 

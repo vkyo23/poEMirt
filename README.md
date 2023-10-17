@@ -18,7 +18,7 @@ You can install the development version of `poEMirt` from
 [GitHub](https://github.com) with:
 
 ``` r
-# FILL THIS IN! HOW CAN PEOPLE INSTALL YOUR DEV PACKAGE?
+remotes::install_github("vkyo23/poEMirt")
 ```
 
 ## Usage

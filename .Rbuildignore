@@ -3,3 +3,4 @@
 ^LICENSE\.md$
 check
 ^README\.Rmd$
+/*.tar.gz
