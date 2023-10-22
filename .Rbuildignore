@@ -4,3 +4,5 @@
 check
 ^README\.Rmd$
 /*.tar.gz
+\.gitignore
+\.git

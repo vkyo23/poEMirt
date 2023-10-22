@@ -51,7 +51,7 @@ read_poEMirt <- function(data,
       .vars = dplyr::vars(dplyr::all_of(!!responses)),
       .funs = function(x) sum(x, na.rm = TRUE)
     ) 
-  jname <- as.vector(as.matrix(excl[, 1]))
+  jname <- excl$item_year_id
   excl <- excl |> 
     dplyr::select(-!!j) %>% 
     dplyr::mutate(

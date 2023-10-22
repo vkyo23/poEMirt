@@ -1,0 +1,19 @@
+Package: poEMirt
+Type: Package
+Title: A Fast EM Item Response Theory Model for Public Opinion Data
+        Analysis
+Version: 0.0.1
+Date: 2023-10-12
+Author: Ukyo Kanetaka
+Maintainer: Ukyo Kanetaka <u.kanetaka@gmail.com>
+Description: This package implements a fast EM estimation of item response theory model for public opinion analysis.
+License: GPL (>= 3)
+Imports: doParallel, doRNG, dplyr, foreach, parallel, pg, posterior,
+        Rcpp (>= 1.0.10), rlang, stats, stringr, tidyr
+LinkingTo: Rcpp, RcppArmadillo, pg
+RoxygenNote: 7.2.1
+LazyData: TRUE
+Encoding: UTF-8
+NeedsCompilation: yes
+Packaged: 2023-10-22 05:17:43 UTC; ft-pc94
+Depends: R (>= 3.5.0)
