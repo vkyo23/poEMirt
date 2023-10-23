@@ -13,9 +13,9 @@
 #' @param priors a list, containing prior distributions (optional).
 #' \itemize{
 #'   \item \code{a0} A double or J x max(K)-1 matrix, prior mean of alpha. Default is 0.
-#'   \item \code{A0} A double or J x max(K)-1 matrix, prior variance of alpha. Default is 25.
+#'   \item \code{A0} A double or J x max(K)-1 matrix, prior variance of alpha. Default is 1.
 #'   \item \code{b0} A double or J x max(K)-1 matrix, prior mean of beta Default is 0.
-#'   \item \code{B0} A double or J x max(K)-1 matrix, prior variance of beta. Default is 25.
+#'   \item \code{B0} A double or J x max(K)-1 matrix, prior variance of beta. Default is 1.
 #'   \item \code{m0} A double or I length vector, prior mean of theta_i0 for dynamic model. Default is 0. 
 #'   \item \code{C0} A double or I length vector, prior variance of theta_i0 for dynamic model. Default is 1.
 #'   \item \code{Delta} A double or I length vector, prior evolution variance of theta_it for dynamic model. Default is 0.01.
@@ -75,13 +75,12 @@ poEMirt <- function(data,
                     init = NULL, 
                     priors = NULL, 
                     control = NULL) {
-  cat("================\n")
-  cat('poEMirt starts! \n')
-  cat("================\n")
+  cat("=== poEMirt starts! ===\n")
   
   # Input check
   if (is.null(control)) control <- list()
   model <- match.arg(model, choices = c('static', 'dynamic'))
+  if (length(model) > 1) stop('Model must be one of "static" or "dynamic".')
   if (class(data)[1] != 'poEMirtData') {
     stop('`data` should be a `poEMirtData` object. Use `read_poEMirt()` first to create the object.')
   }
@@ -101,9 +100,9 @@ poEMirt <- function(data,
     cat('* Setting priors.....')
     priors <- list(
       a0 = matrix(0, J, maxK-1),
-      A0 = matrix(25, J, maxK-1),
+      A0 = matrix(1, J, maxK-1),
       b0 = matrix(0, J, maxK-1),
-      B0 = matrix(25, J, maxK-1)
+      B0 = matrix(1, J, maxK-1)
     )
     if (model == 'dynamic') {
       priors$m0 <- rep(0, I)
@@ -112,39 +111,71 @@ poEMirt <- function(data,
     }
     cat('DONE!\n')
   } else {
-    if (model == 'dynamic') {
-      prls <- c('a0', 'A0', 'b0', 'B0', 'm0', 'C0', 'Delta')
-      for (l in 1:length(prls)) {
-        if (!exists(prls[l], priors)) {
-          stop(paste0('Please supply a prior`', prls[l], '`.'))
-        } 
-        if (prls[l] %in% c('a0', 'A0', 'b0', 'B0')) {
-          if (length(unlist(priors[prls[l]])) == 1) {
-            priors[prls[l]][[1]] <- matrix(unlist(priors[prls[l]]), J, maxK-1)
-          } else if (length(unlist(priors[prls[l]])) != (J * (maxK-1))) {
-            stop(paste0('A prior `', prls[l], '` must be a scalar or J x max(Kj)-1 matrix.'))
-          }
-        } else if (prls[l] %in% c('m0', 'C0', 'Delta')) {
-          if (length(unlist(priors[prls[l]])) == 1) {
-            priors[prls[l]][[1]] <- rep(unlist(priors[prls[l]]), I)
-          } else if (length(unlist(priors[prls[l]])) != I) {
-            stop(paste0('A prior `', prls[l], '` must be a scalar or I length vector.'))
-          }
-        } 
+    if (exists('a0', priors)) {
+      if (length(priors$a0) == 1) {
+        priors$a0 <- matrix(priors$a0, J, maxK-1)
+      } else if (length(priors$a0) != (J * (maxK-1))) {
+        stop('`priors$a0` must be must be a scalar or J x max(Kj)-1 matrix.')
       }
     } else {
-      prls <- c('a0', 'A0', 'b0', 'B0')
-      for (l in 1:length(prls)) {
-        if (!exists(prls[l], priors)) {
-          stop(paste0('A list `priors` does not contain `', prls[l], '`.'))
-        } else if (length(unlist(priors[prls[l]])) == 1) {
-          priors[prls[l]][[1]] <- matrix(unlist(priors[prls[l]]), J, maxK-1)
-        } else if (length(unlist(priors[prls[l]])) > 1 &
-                   length(unlist(priors[prls[l]])) != (J * (maxK-1))) {
-          stop(paste0('A prior `', prls[l], '` must be the same length as the number of items times K-1.'))
-        }
-      }
+      priors$a0 <- matrix(0, J, maxK-1)
     }
+    if (exists('A0', priors)) {
+      if (length(priors$A0) == 1) {
+        priors$A0 <- matrix(priors$A0, J, maxK-1)
+      } else if (length(priors$A0) != (J * (maxK-1))) {
+        stop('`priors$A0` must be must be a scalar or J x max(Kj)-1 matrix.')
+      }
+    } else {
+      priors$A0 <- matrix(1, J, maxK-1)
+    }
+    if (exists('b0', priors)) {
+      if (length(priors$b0) == 1) {
+        priors$b0 <- matrix(priors$b0, J, maxK-1)
+      } else if (length(priors$b0) != (J * (maxK-1))) {
+        stop('`priors$b0` must be must be a scalar or J x max(Kj)-1 matrix.')
+      }
+    } else {
+      priors$b0 <- matrix(0, J, maxK-1)
+    }
+    if (exists('B0', priors)) {
+      if (length(priors$B0) == 1) {
+        priors$B0 <- matrix(priors$B0, J, maxK-1)
+      } else if (length(priors$B0) != (J * (maxK-1))) {
+        stop('`priors$B0` must be must be a scalar or J x max(Kj)-1 matrix.')
+      }
+    } else {
+      priors$B0 <- matrix(1, J, maxK-1)
+    }
+    if (model == 'dynamic') {
+      if (exists('m0', priors)) {
+        if (length(priors$m0) == 1) {
+          priors$m0 <- rep(priors$m0, I)
+        } else if (length(priors$m0) != I) {
+          stop('`priors$m0` must be must be a scalar or I-length vector.')
+        }
+      } else {
+        priors$m0 <- rep(0, I)
+      }
+      if (exists('C0', priors)) {
+        if (length(priors$C0) == 1) {
+          priors$C0 <- rep(priors$C0, I)
+        } else if (length(priors$C0) != I) {
+          stop('`priors$C0` must be must be a scalar or I-length vector.')
+        }
+      } else {
+        priors$C0 <- rep(1, I)
+      }
+      if (exists('Delta', priors)) {
+        if (length(priors$Delta) == 1) {
+          priors$Delta <- rep(priors$Delta, I)
+        } else if (length(priors$Delta) != I) {
+          stop('`priors$Delta` must be must be a scalar or I-length vector.')
+        }
+      } else {
+        priors$Delta <- rep(0.01, I)
+      }
+    } 
   }
   
   # Initial value
@@ -209,7 +240,7 @@ poEMirt <- function(data,
       timemap = timemap,
       timemap2 = data$dynamic$timemap2,
       item_timemap = item_timemap,
-      item_match = item_match,
+      item_match = item_match - 1,
       a0 = priors$a0,
       A0 = priors$A0,
       b0 = priors$b0,
