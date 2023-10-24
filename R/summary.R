@@ -295,6 +295,7 @@ summary.poEMirtBoot <- function(object,
 #' @importFrom tidyr pivot_longer drop_na
 #' @importFrom stats quantile median
 #' @importFrom posterior rhat
+#' @importFrom rlang .data
 #' @export
 summary.poEMirtGibbs <- function(object, 
                                  parameter = c("alpha", "beta", "theta"),
