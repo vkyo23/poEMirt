@@ -21,11 +21,7 @@ knitr::opts_chunk$set(
 [![R-CMD-check](https://github.com/vkyo23/poEMirt/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/vkyo23/poEMirt/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
-`poEMirt` is an `R` package that implements fast EM item response theory for public opinion data analysis to estimate cross-national latent public opinion over years.
-This package utilizes the Polya-Gamma data augmentation scheme (Polson, Scott & Windle 2013) and exact EM algorithm (Goplerud 2019) for fast computation. 
-This package incorporates direct C++ programming and does not depend on ready-made other statistical modeling languages, thus the computation is more efficient.
-It can be applied to not only binomial and multinomial outcomes but also bernoulli and categorial ones. 
-Users can estimate statistical uncertainty by parametric bootstrap and Gibbs Sampling.
+`poEMirt` is an `R` package that implements fast EM item response theory for cross-national public opinion data to estimate dynamic latent public opinion. The model utilizes the Polya-Gamma data augmentation scheme (Polson, Scott & Windle 2013) and exact EM algorithm (Goplerud 2019) for fast computation. This package incorporates direct C++ programming and does not depend on ready-made other statistical modeling languages, thus the computation is more efficient. It can be applied to not only binomial and multinomial outcomes but also bernoulli and categorial ones. Users can estimate statistical uncertainty by parametric bootstrap and Gibbs Sampling.
 
 ## Installation
 

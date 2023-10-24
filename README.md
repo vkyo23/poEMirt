@@ -9,8 +9,8 @@
 <!-- badges: end -->
 
 `poEMirt` is an `R` package that implements fast EM item response theory
-for public opinion data analysis to estimate cross-national latent
-public opinion over years. This package utilizes the Polya-Gamma data
+for cross-national public opinion data to estimate dynamic latent
+public opinion. The model utilizes the Polya-Gamma data
 augmentation scheme (Polson, Scott & Windle 2013) and exact EM algorithm
 (Goplerud 2019) for fast computation. This package incorporates direct
 C++ programming and does not depend on ready-made other statistical
