@@ -28,7 +28,7 @@ summary.poEMirtData <- function(object, ...) {
     mean()
   cat("  - mean(Kj) =", round(me, 2), "\n")
   cat("* NA rate:", 
-      paste0(round(sum(is.na(object$response)) / length(object$response), 3) * 100, "%"), "\n")
+      paste0(round(sum(object$trial == 0) / length(object$trial), 3) * 100, "%"), "\n")
 }
 
 #' @title Summary function for \code{poEMirtFit}
