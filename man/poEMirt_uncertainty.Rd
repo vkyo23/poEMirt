@@ -19,16 +19,16 @@ poEMirt_uncertainty(
 
 \item{seed}{An integer. Random seed if needed.}
 
-\item{iter}{An integer. The number of iterations.}
+\item{iter}{An integer. The number of iterations. Default is 100.}
 
 \item{control}{A list of model controls. This can include following elements.
 \itemize{
   \item \code{save_item_parameters} A bool. If TRUE, the function keeps item parameters. Default is FALSE.
   \item \code{verbose} An integer of verbose. Default is NULL.
-  \item \code{thread} An integer of threads (only Bootstrap). Default is 1. Status messages will not be printed if \code{thread} > 1.
-  \item \code{warmup} An integer (only Gibbs). The number of warmup iterations for Gibbs sampling. Default is 100.
-  \item \code{thin} An integer of thinning for Gibbs sampling (only Gibbs). Default is 1.
-  \item \code{PG_approx} A bool (only Gibbs). If TRUE, approximated Polya-Gamma random draws are used. This approximation accelerates the implementation but is not recommended for small \code{n} (e.g., \code{n} < 20). Default is FALSE.
+  \item \code{thread} An integer of threads (only for Bootstrap). Default is 1. Status messages will not be printed if \code{thread} > 1.
+  \item \code{warmup} An integer (only for Gibbs). The number of warmup iterations for Gibbs sampling. Default is 100.
+  \item \code{thin} An integer of thinning for Gibbs sampling (only for Gibbs). Default is 1.
+  \item \code{PG_approx} A bool (only Gibbs). If TRUE, approximated Polya-Gamma random draws are used. This approximation accelerates the implementation but is not recommended for small n (e.g., n < 10). Default is FALSE.
 }}
 }
 \value{
@@ -40,7 +40,7 @@ A \code{poEMirtBoot} / \code{poEMirtGibbs} object containing:
 }
 }
 \description{
-This function computes statistical uncertainty (i.e., standard deviation) using bootstrap or Gibbs sampling.
+This function computes statistical uncertainty using bootstrap or Gibbs sampling.
 }
 \examples{
 \dontrun{

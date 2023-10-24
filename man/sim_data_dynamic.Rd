@@ -5,7 +5,7 @@
 \alias{sim_data_dynamic}
 \title{Simulated data (dynamic)}
 \format{
-a tbl_df with 200 individuals, 400 items, 40 time-periods (10 items per time-period), and max(K_j) = 5. 
+A tbl_df with 200 individuals, 400 items, 40 time-periods (10 items per time-period), and max(K_j) = 5. 
  \describe{
   \item{i}{Individual ID}
   \item{j}{Item ID}

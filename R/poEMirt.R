@@ -3,7 +3,7 @@
 #' 
 #' @param data An object of \code{poEMirtData} via \code{read_poEMirt()}. 
 #' @param model A string, one of "static" or "dynamic".
-#' @param constraint An integer scalar or vector (for dynamic model, the same length as the number of sessions), index of an individual i (the location of i) whose latent trait is always set positive.
+#' @param constraint An integer scalar or vector (for dynamic model, the same length as the number of times), index of an individual i (the location of i) whose latent trait is always set positive.
 #' @param init A list, containing initial values (optional).
 #' \itemize{
 #'   \item \code{alpha} J x max(K)-1 matrix of alpha. Missing values must be 0.
@@ -70,7 +70,7 @@
 #' }
 
 poEMirt <- function(data, 
-                    model = c('static', 'dynamic'), 
+                    model = c("static", "dynamic"), 
                     constraint = NULL,
                     init = NULL, 
                     priors = NULL, 
@@ -79,15 +79,15 @@ poEMirt <- function(data,
   
   # Input check
   if (is.null(control)) control <- list()
-  model <- match.arg(model, choices = c('static', 'dynamic'))
-  if (length(model) > 1) stop('Model must be one of "static" or "dynamic".')
-  if (class(data)[1] != 'poEMirtData') {
-    stop('`data` should be a `poEMirtData` object. Use `read_poEMirt()` first to create the object.')
+  model <- match.arg(model, choices = c("static", "dynamic"))
+  if (length(model) > 1) stop("Model must be one of 'static' or 'dynamic'.")
+  if (class(data)[1] != "poEMirtData") {
+    stop("`data` should be a `poEMirtData` object. Use `read_poEMirt()` first to create the object.")
   }
   I <- data$size$I
   J <- data$size$J
   maxK <- data$size$maxK
-  if (model == 'dynamic') {
+  if (model == "dynamic") {
     T <- data$size$T
     timemap <- data$dynamic$timemap
     item_timemap <- data$dynamic$item_timemap - 1
@@ -97,80 +97,80 @@ poEMirt <- function(data,
   
   # Priors
   if (is.null(priors)) {
-    cat('* Setting priors.....')
+    cat("* Setting priors.....")
     priors <- list(
       a0 = matrix(0, J, maxK-1),
       A0 = matrix(1, J, maxK-1),
       b0 = matrix(0, J, maxK-1),
       B0 = matrix(1, J, maxK-1)
     )
-    if (model == 'dynamic') {
+    if (model == "dynamic") {
       priors$m0 <- rep(0, I)
       priors$C0 <- rep(1, I)
       priors$Delta <- rep(0.01, I)
     }
-    cat('DONE!\n')
+    cat("DONE!\n")
   } else {
-    if (exists('a0', priors)) {
+    if (exists("a0", priors)) {
       if (length(priors$a0) == 1) {
         priors$a0 <- matrix(priors$a0, J, maxK-1)
       } else if (length(priors$a0) != (J * (maxK-1))) {
-        stop('`priors$a0` must be must be a scalar or J x max(Kj)-1 matrix.')
+        stop("`priors$a0` must be must be a scalar or J x max(Kj)-1 matrix.")
       }
     } else {
       priors$a0 <- matrix(0, J, maxK-1)
     }
-    if (exists('A0', priors)) {
+    if (exists("A0", priors)) {
       if (length(priors$A0) == 1) {
         priors$A0 <- matrix(priors$A0, J, maxK-1)
       } else if (length(priors$A0) != (J * (maxK-1))) {
-        stop('`priors$A0` must be must be a scalar or J x max(Kj)-1 matrix.')
+        stop("`priors$A0` must be must be a scalar or J x max(Kj)-1 matrix.")
       }
     } else {
       priors$A0 <- matrix(1, J, maxK-1)
     }
-    if (exists('b0', priors)) {
+    if (exists("b0", priors)) {
       if (length(priors$b0) == 1) {
         priors$b0 <- matrix(priors$b0, J, maxK-1)
       } else if (length(priors$b0) != (J * (maxK-1))) {
-        stop('`priors$b0` must be must be a scalar or J x max(Kj)-1 matrix.')
+        stop("`priors$b0` must be must be a scalar or J x max(Kj)-1 matrix.")
       }
     } else {
       priors$b0 <- matrix(0, J, maxK-1)
     }
-    if (exists('B0', priors)) {
+    if (exists("B0", priors)) {
       if (length(priors$B0) == 1) {
         priors$B0 <- matrix(priors$B0, J, maxK-1)
       } else if (length(priors$B0) != (J * (maxK-1))) {
-        stop('`priors$B0` must be must be a scalar or J x max(Kj)-1 matrix.')
+        stop("`priors$B0` must be must be a scalar or J x max(Kj)-1 matrix.")
       }
     } else {
       priors$B0 <- matrix(1, J, maxK-1)
     }
-    if (model == 'dynamic') {
-      if (exists('m0', priors)) {
+    if (model == "dynamic") {
+      if (exists("m0", priors)) {
         if (length(priors$m0) == 1) {
           priors$m0 <- rep(priors$m0, I)
         } else if (length(priors$m0) != I) {
-          stop('`priors$m0` must be must be a scalar or I-length vector.')
+          stop("`priors$m0` must be must be a scalar or I-length vector.")
         }
       } else {
         priors$m0 <- rep(0, I)
       }
-      if (exists('C0', priors)) {
+      if (exists("C0", priors)) {
         if (length(priors$C0) == 1) {
           priors$C0 <- rep(priors$C0, I)
         } else if (length(priors$C0) != I) {
-          stop('`priors$C0` must be must be a scalar or I-length vector.')
+          stop("`priors$C0` must be must be a scalar or I-length vector.")
         }
       } else {
         priors$C0 <- rep(1, I)
       }
-      if (exists('Delta', priors)) {
+      if (exists("Delta", priors)) {
         if (length(priors$Delta) == 1) {
           priors$Delta <- rep(priors$Delta, I)
         } else if (length(priors$Delta) != I) {
-          stop('`priors$Delta` must be must be a scalar or I-length vector.')
+          stop("`priors$Delta` must be must be a scalar or I-length vector.")
         }
       } else {
         priors$Delta <- rep(0.01, I)
@@ -180,37 +180,37 @@ poEMirt <- function(data,
   
   # Initial value
   if (is.null(init)) {
-    cat('* Finding best initial values.....')
+    cat("* Finding best initial values.....")
     init <- make_init(
       data = data,
       priors = priors,
       constraint = constraint
     )
-    if (model == 'dynamic') {
+    if (model == "dynamic") {
       init$theta <- init$theta * timemap
     }
-    cat('DONE!\n')
+    cat("DONE!\n")
   } else {
-    inls <- c('alpha', 'beta', 'theta')
+    inls <- c("alpha", "beta", "theta")
     for (l in 1:length(inls)) {
       if (!exists(inls[l], init)) {
-        stop(paste0('A list `init` does not contain `', inls[l], '`.'))
-      } else if ((inls[l] %in% c('alpha', 'beta') & nrow((init[inls[l]])[[1]]) != J) |
-                 (inls[l] %in% c('alpha', 'beta') & ncol(init[inls[l]][[1]]) != (maxK-1))) {
-        stop(paste0('`init$', inls[l], '` must be J x K-1 matrix'))
-      } else if (inls[l] == 'theta' & model == 'dynamic') {
+        stop(paste0("A list `init` does not contain `", inls[l], "`."))
+      } else if ((inls[l] %in% c("alpha", "beta") & nrow((init[inls[l]])[[1]]) != J) |
+                 (inls[l] %in% c("alpha", "beta") & ncol(init[inls[l]][[1]]) != (maxK-1))) {
+        stop(paste0("`init$", inls[l], "` must be J x K-1 matrix"))
+      } else if (inls[l] == "theta" & model == "dynamic") {
         if (nrow(init[inls[l]][[1]]) != I | ncol(init[inls[l]][[1]]) != T) {
-          stop('`init$theta` must be I x T matrix for dynamic model.') 
+          stop("`init$theta` must be I x T matrix for dynamic model.") 
         }
-      } else if ((inls[l] == 'theta' & model == 'default' & nrow(init[inls[l]][[1]]) != I) |
-                 (inls[l] == 'theta' & model == 'default' & ncol(init[inls[l]][[1]]) != 1)) {
-        stop('`init$theta` must be I-length vector for static model.')
+      } else if ((inls[l] == "theta" & model == "static" & nrow(init[inls[l]][[1]]) != I) |
+                 (inls[l] == "theta" & model == "static" & ncol(init[inls[l]][[1]]) != 1)) {
+        stop("`init$theta` must be I-length vector for static model.")
       }
     }
   }
   # Constraint
   if (is.null(constraint)) {
-    if (model == 'dynamic') {
+    if (model == "dynamic") {
       constraint <- apply(init$theta, 2, which.max)
     } else {
       constraint <- which.max(init$theta) 
@@ -218,18 +218,18 @@ poEMirt <- function(data,
   } 
   
   # Control
-  if (!exists('std', control)) control$std <- FALSE
-  if (!exists('compute_ll', control)) control$compute_ll <- FALSE
-  if (!exists('maxit', control)) control$maxit <- 500
-  if (!exists('tol', control)) control$tol <- 1e-6
-  if (control$tol >= 1) stop('`control$tol` must be lower than 1.')
-  if (!exists('verbose', control)) control$verbose <- NULL
+  if (!exists("std", control)) control$std <- FALSE
+  if (!exists("compute_ll", control)) control$compute_ll <- FALSE
+  if (!exists("maxit", control)) control$maxit <- 500
+  if (!exists("tol", control)) control$tol <- 1e-6
+  if (control$tol >= 1) stop("`control$tol` must be lower than 1.")
+  if (!exists("verbose", control)) control$verbose <- NULL
   verb <- ifelse(is.null(control$verbose), control$maxit+1, control$verbose)
   
   # Fitting
   cat("\n=== Expectation-Maximization ===\n")
   stime <- proc.time()[3]
-  if (model == 'dynamic') {
+  if (model == "dynamic") {
     fit <- poEMirtdynamic_fit(
       Y = data$response,
       N = data$trial,
@@ -278,9 +278,9 @@ poEMirt <- function(data,
   # Output
   el <- round(proc.time()[3] - stime, 1)
   if (fit$converge) {
-    cat('* Model converged at iteration', fit$iter, ':', el, 'sec.\n')
+    cat("* Model converged at iteration", fit$iter, ":", el, "sec.\n")
   } else {
-    warning('* Model failed to converge : ', el, 'sec.')
+    warning("* Model failed to converge : ", el, "sec.")
   }
   fit$alpha[fit$alpha == 0] <- NA
   fit$beta[fit$beta == 0] <- NA
@@ -288,12 +288,12 @@ poEMirt <- function(data,
   rownames(fit$alpha) <- rownames(fit$beta) <- colnames(data$response)
   colnames(fit$alpha) <- colnames(fit$beta) <- dimnames(data$response)[[3]][-maxK]
   rownames(fit$theta) <- rownames(data$response)
-  if (model == 'dynamic') {
+  if (model == "dynamic") {
     colnames(fit$theta) <- 1:data$size$T
   } else {
     colnames(fit$theta) <- 1
   }
-  colnames(fit$conv) <- c('alpha', 'beta', 'theta')
+  colnames(fit$conv) <- c("alpha", "beta", "theta")
   L <- list(
     parameter = list(
       alpha = fit$alpha,
@@ -315,7 +315,7 @@ poEMirt <- function(data,
   )
   if (!control$compute_ll) L$log_likelihood <- NULL
   L$.Call <- match.call()
-  class(L) <- c('poEMirtFit', class(L))
+  class(L) <- c("poEMirtFit", class(L))
   return(L)
 }
 

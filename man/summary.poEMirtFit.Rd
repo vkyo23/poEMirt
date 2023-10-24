@@ -11,7 +11,7 @@
 
 \item{parameter}{A character or character vector, indicating what parameters ("alpha", "beta", "theta") you want to get.}
 
-\item{...}{Parameters to \code{summary()}.}
+\item{...}{Other arguments to \code{summary()}.}
 }
 \value{
 A tibble dataframe.

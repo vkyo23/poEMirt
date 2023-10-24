@@ -1,17 +1,17 @@
 #' @title Estimating statistical uncertainty for poEMirt models
-#' @description This function computes statistical uncertainty (i.e., standard deviation) using bootstrap or Gibbs sampling.
+#' @description This function computes statistical uncertainty using bootstrap or Gibbs sampling.
 #' @param fit A \code{poEMirtFit} object from \code{poEMirt()}.
 #' @param method A character. This must be "bootstrap" or "gibbs". 
 #' @param seed An integer. Random seed if needed.
-#' @param iter An integer. The number of iterations.
+#' @param iter An integer. The number of iterations. Default is 100.
 #' @param control A list of model controls. This can include following elements.
 #' \itemize{
 #'   \item \code{save_item_parameters} A bool. If TRUE, the function keeps item parameters. Default is FALSE.
 #'   \item \code{verbose} An integer of verbose. Default is NULL.
-#'   \item \code{thread} An integer of threads (only Bootstrap). Default is 1. Status messages will not be printed if \code{thread} > 1.
-#'   \item \code{warmup} An integer (only Gibbs). The number of warmup iterations for Gibbs sampling. Default is 100.
-#'   \item \code{thin} An integer of thinning for Gibbs sampling (only Gibbs). Default is 1.
-#'   \item \code{PG_approx} A bool (only Gibbs). If TRUE, approximated Polya-Gamma random draws are used. This approximation accelerates the implementation but is not recommended for small \code{n} (e.g., \code{n} < 20). Default is FALSE.
+#'   \item \code{thread} An integer of threads (only for Bootstrap). Default is 1. Status messages will not be printed if \code{thread} > 1.
+#'   \item \code{warmup} An integer (only for Gibbs). The number of warmup iterations for Gibbs sampling. Default is 100.
+#'   \item \code{thin} An integer of thinning for Gibbs sampling (only for Gibbs). Default is 1.
+#'   \item \code{PG_approx} A bool (only Gibbs). If TRUE, approximated Polya-Gamma random draws are used. This approximation accelerates the implementation but is not recommended for small n (e.g., n < 10). Default is FALSE.
 #' }
 #' @return A \code{poEMirtBoot} / \code{poEMirtGibbs} object containing:
 #' \describe{
@@ -188,7 +188,7 @@ poEMirt_uncertainty <- function(fit,
             timemap = fit$info$data$dynamic$timemap,
             timemap2 = fit$info$data$dynamic$timemap2,
             item_timemap = fit$info$data$dynamic$item_timemap - 1,
-            item_match = fit$info$data$dynamic$item_match,
+            item_match = fit$info$data$dynamic$item_match - 1,
             a0 = fit$info$priors$a0,
             A0 = fit$info$priors$A0,
             b0 = fit$info$priors$b0,
@@ -217,7 +217,7 @@ poEMirt_uncertainty <- function(fit,
           timemap = fit$info$data$dynamic$timemap,
           timemap2 = fit$info$data$dynamic$timemap2,
           item_timemap = fit$info$data$dynamic$item_timemap - 1,
-          item_match = fit$info$data$dynamic$item_match,
+          item_match = fit$info$data$dynamic$item_match - 1,
           a0 = fit$info$priors$a0,
           A0 = fit$info$priors$A0,
           b0 = fit$info$priors$b0,

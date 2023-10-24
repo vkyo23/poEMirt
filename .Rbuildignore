@@ -6,3 +6,4 @@ check
 /*.tar.gz
 \.gitignore
 \.git
+^\.github$

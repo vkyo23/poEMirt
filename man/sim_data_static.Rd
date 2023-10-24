@@ -5,7 +5,7 @@
 \alias{sim_data_static}
 \title{Simulated data (static)}
 \format{
-a tbl_df with 500 individuals, 100 items, and max(K_j) = 5. 
+A tbl_df with 500 individuals, 100 items, and max(K_j) = 5. 
  \describe{
   \item{i}{Individual ID}
   \item{j}{Item ID}

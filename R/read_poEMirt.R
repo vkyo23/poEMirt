@@ -10,7 +10,7 @@
 #' @param matched_j A name of column that contains item IDs of matched item.
 #' @return A \code{poEMirtData} object.
 #' 
-#' @importFrom rlang sym !! enquo
+#' @importFrom rlang sym !! enquo .data
 #' @importFrom dplyr %>% distinct select filter right_join left_join arrange mutate across everything all_of group_by summarise_at mutate_at row_number
 #' @importFrom tidyr expand_grid spread 
 #' @export
@@ -37,7 +37,7 @@ read_poEMirt <- function(data,
                          no_smooth = FALSE, 
                          matched_j = NULL) {
   # Input check
-  if (!class(data)[1] %in% c('tbl_df', 'data.frame')) stop('`data` should be a data.frame or tbl_df.')
+  if (!class(data)[1] %in% c("tbl_df", "data.frame")) stop("`data` should be a data.frame or tbl_df.")
   
   # Size
   i <- rlang::sym(i)
@@ -53,26 +53,28 @@ read_poEMirt <- function(data,
     ) 
   jname <- as.vector(as.matrix(excl[, 1]))
   excl <- excl |> 
-    dplyr::select(-!!j) %>% 
+    dplyr::select(-!!j)
+  excl <- excl |> 
     dplyr::mutate(
-      all = rowSums(.)
+      all = rowSums(excl)
     ) 
   excl <- excl %>% 
     dplyr::mutate_at(
       .vars = dplyr::vars(dplyr::all_of(!!responses)),
       .funs = function(x) x == excl$all
     ) %>% 
-    dplyr::select(-all) %>% 
+    dplyr::select(-"all") 
+  excl <- excl |> 
     dplyr::mutate(
-      exc = rowSums(.)
+      exc = rowSums(excl)
     ) %>% 
     dplyr::mutate(
       j = jname
     ) %>% 
-    dplyr::filter(exc == 1)
+    dplyr::filter(.data$exc == 1)
   if (nrow(excl) > 0) {
-    cat('* Remove following items due to no variation in responses\n')
-    cat('  -', excl$j, '\n')
+    cat("* Remove following items due to no variation in responses\n")
+    cat("  -", excl$j, "\n")
     data <- data %>% 
       dplyr::filter(
         !eval(j) %in% excl$j
@@ -86,7 +88,7 @@ read_poEMirt <- function(data,
     if (!is.null(matched_j)) {
       matched_j <- rlang::sym(matched_j)
       data <- data %>% 
-        dplyr::select(i = !!i, j = !!j, mj = !!matched_j, t = !!t,dplyr::all_of(!!responses))
+        dplyr::select(i = !!i, j = !!j, mj = !!matched_j, t = !!t, dplyr::all_of(!!responses))
     } else {
       data <- data %>% 
         dplyr::select(i = !!i, j = !!j, t = !!t, dplyr::all_of(!!responses))
@@ -118,11 +120,11 @@ read_poEMirt <- function(data,
     dplyr::select(dplyr::all_of(!!responses)) %>% 
     colnames()
   for (kk in 1:length(Ks)) {
-    Y[, , kk] <- data %>% 
+    tmp <- data %>% 
       dplyr::select(i, j, y = dplyr::all_of(Ks[kk])) %>% 
-      tidyr::spread(key = j, value = y) %>%
-      arrange(i) %>%
-      .[, -1] %>%
+      tidyr::spread(key = j, value = .data$y) %>%
+      arrange(i)
+    Y[, , kk] <- tmp[, -1] %>%
       as.matrix() 
   }
   
@@ -150,12 +152,12 @@ read_poEMirt <- function(data,
   
   if (!is.null(t)) {
     # Time-map
-    timemap <- data %>% 
+    tmp <- data %>% 
       dplyr::distinct(i, t) %>% 
       dplyr::arrange(i) %>% 
       dplyr::mutate(dum = 1) %>% 
-      tidyr::spread(key = t, value = dum) %>% 
-      .[, -1] %>% 
+      tidyr::spread(key = t, value = .data$dum) 
+    timemap <- tmp[, -1] %>%
       dplyr::mutate(
         dplyr::across(
           .cols = dplyr::everything(),
@@ -179,9 +181,9 @@ read_poEMirt <- function(data,
     # Matched items
     if (!is.null(matched_j)) {
       item_match <- data %>% 
-        dplyr::distinct(j, mj) %>% 
-        dplyr::arrange(j) %>% 
-        .$j
+        dplyr::distinct(j, .data$mj) %>% 
+        dplyr::arrange(j) 
+      item_match <- item_match$j
     } else {
       item_match <- rep(NA, J)
     }
@@ -196,6 +198,6 @@ read_poEMirt <- function(data,
     )
   }
   
-  class(L) <- c('poEMirtData', class(L))
+  class(L) <- c("poEMirtData", class(L))
   return(L)
 }

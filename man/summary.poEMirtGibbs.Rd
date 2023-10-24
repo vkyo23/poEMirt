@@ -13,7 +13,7 @@
 
 \item{ci}{A float (< 1). Confidence interval.}
 
-\item{...}{Parameters to \code{summary()}.}
+\item{...}{Other arguments to \code{summary()}.}
 }
 \value{
 A tibble dataframe.

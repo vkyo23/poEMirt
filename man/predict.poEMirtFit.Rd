@@ -12,7 +12,7 @@
 \item{type}{A character, one of "prob" or "response". "prob" returns predicted probabilities of choices 
 and "response" returns predicted value of Y.}
 
-\item{...}{Auxiliary parameters to \code{predict()}.}
+\item{...}{Other arguments to \code{predict()}.}
 }
 \description{
 Predict function for `poEMirtFit`

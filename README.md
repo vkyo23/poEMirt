@@ -4,13 +4,15 @@
 # poEMirt
 
 <!-- badges: start -->
+
+[![R-CMD-check](https://github.com/vkyo23/poEMirt/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/vkyo23/poEMirt/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
-`poEMirt` is an `R` pacakge that implements fast EM item response theory
-models for public opinion data analysis. Models include binary,
-categorical, binomial and multinomial outcomes along with static and
-dynamic estimation. Users can also estimate statistical uncertainty by
-parametric bootstrap or Gibbs Sampling.
+`poEMirt` is an `R` package that implements fast EM item response theory
+models for public opinion data analysis. Models can be applied to
+binary, categorical, binomial and multinomial outcome data. Users can
+also estimate statistical uncertainty by parametric bootstrap and Gibbs
+Sampling.
 
 ## Installation
 
@@ -59,50 +61,56 @@ data <- read_poEMirt(
   j = "j",
   t = "t"
 )
-#> * Dimension of the response array: 200 x 400 x 5
+summary(data)
+#> ----- poEMirtData summary -----
+#> * Data size:
+#>   - I =  200 
+#>   - J =  400 
+#>   - T =  40 
+#>   - min(Kj) =  2 
+#>   - max(Kj) =  5 
+#>   - mean(Kj) = 3.44 
+#> * NA rate: 31.2%
 
 # Fit the model
 fit <- poEMirt(
   data = data,
   model = "dynamic",
   control = list(
-    verbose = 10,
-    constrant = 1
+    verbose = 10
   )
 )
-#> ================
-#> poEMirt starts! 
-#> ================
+#> === poEMirt starts! ===
 #> * Setting priors.....DONE!
 #> * Finding best initial values.....DONE!
 #> 
 #> === Expectation-Maximization ===
-#> * Model converged at iteration 10 : 0.2 sec.
+#> * Model converged at iteration 10 : 0.3 sec.
 
 # Summarize the result
 summary(fit, parameter = "theta")
 #> * Summarizing following parameters: theta.
 #> # A tibble: 8,000 × 4
-#>    parameter index   reference estimate
-#>    <chr>     <chr>   <chr>        <dbl>
-#>  1 theta     [1, 1]  [i, t]      -0.525
-#>  2 theta     [1, 2]  [i, t]      -0.583
-#>  3 theta     [1, 3]  [i, t]      -0.413
-#>  4 theta     [1, 4]  [i, t]      -0.525
-#>  5 theta     [1, 5]  [i, t]      -0.400
-#>  6 theta     [1, 6]  [i, t]      -0.340
-#>  7 theta     [1, 7]  [i, t]      -0.398
-#>  8 theta     [1, 8]  [i, t]      -0.361
-#>  9 theta     [1, 9]  [i, t]      -0.205
-#> 10 theta     [1, 10] [i, t]      -0.243
-#> # … with 7,990 more rows
+#>    parameter index  reference estimate
+#>    <chr>     <chr>  <chr>        <dbl>
+#>  1 theta     [1,1]  [i,t]       -0.525
+#>  2 theta     [1,2]  [i,t]       -0.582
+#>  3 theta     [1,3]  [i,t]       -0.413
+#>  4 theta     [1,4]  [i,t]       -0.524
+#>  5 theta     [1,5]  [i,t]       -0.400
+#>  6 theta     [1,6]  [i,t]       -0.339
+#>  7 theta     [1,7]  [i,t]       -0.398
+#>  8 theta     [1,8]  [i,t]       -0.361
+#>  9 theta     [1,9]  [i,t]       -0.205
+#> 10 theta     [1,10] [i,t]       -0.242
+#> # ℹ 7,990 more rows
 ```
 
 ### Estimation of statistical uncertainty
 
 To estimate statistical uncertainty (e.g., standard deviation), you can
 use `poEMirt_uncertainty()`. In this function, you can choose
-*parametric bootstrap* (“bootstrap”) or *Gibbs Sampling* (“gibbs”).
+*parametric bootstrap* (`"bootstrap"`) or *Gibbs sampling* (`"gibbs"`).
 
 #### Bootstrap
 
@@ -127,34 +135,30 @@ fit_boot <- poEMirt_uncertainty(
 #> * Bootstrap 70 / 100 
 #> * Bootstrap 80 / 100 
 #> * Bootstrap 90 / 100 
-#> * Bootstrap 100 / 100
+#> * Bootstrap 100 / 100 
+#> DONE!
 
 summary(fit_boot, parameter = "theta", ci = 0.95)
 #> * Summarizing following parameters: theta.
 #> # A tibble: 8,000 × 7
-#>    parameter index   reference estimate     sd ci_lwr ci_upr
-#>    <chr>     <chr>   <chr>        <dbl>  <dbl>  <dbl>  <dbl>
-#>  1 theta     [1, 1]  [i, t]      -0.525 0.0335 -0.590 -0.459
-#>  2 theta     [1, 2]  [i, t]      -0.583 0.0303 -0.642 -0.523
-#>  3 theta     [1, 3]  [i, t]      -0.413 0.0270 -0.466 -0.360
-#>  4 theta     [1, 4]  [i, t]      -0.525 0.0294 -0.582 -0.467
-#>  5 theta     [1, 5]  [i, t]      -0.400 0.0348 -0.468 -0.332
-#>  6 theta     [1, 6]  [i, t]      -0.340 0.0321 -0.402 -0.277
-#>  7 theta     [1, 7]  [i, t]      -0.398 0.0319 -0.461 -0.336
-#>  8 theta     [1, 8]  [i, t]      -0.361 0.0322 -0.424 -0.298
-#>  9 theta     [1, 9]  [i, t]      -0.205 0.0286 -0.262 -0.149
-#> 10 theta     [1, 10] [i, t]      -0.243 0.0349 -0.311 -0.174
-#> # … with 7,990 more rows
+#>    parameter index  reference estimate     sd ci_lwr ci_upr
+#>    <chr>     <chr>  <chr>        <dbl>  <dbl>  <dbl>  <dbl>
+#>  1 theta     [1,1]  [i,t]       -0.525 0.0380 -0.599 -0.450
+#>  2 theta     [1,2]  [i,t]       -0.582 0.0319 -0.645 -0.520
+#>  3 theta     [1,3]  [i,t]       -0.413 0.0267 -0.465 -0.360
+#>  4 theta     [1,4]  [i,t]       -0.524 0.0316 -0.586 -0.463
+#>  5 theta     [1,5]  [i,t]       -0.400 0.0340 -0.466 -0.333
+#>  6 theta     [1,6]  [i,t]       -0.339 0.0350 -0.408 -0.271
+#>  7 theta     [1,7]  [i,t]       -0.398 0.0319 -0.461 -0.336
+#>  8 theta     [1,8]  [i,t]       -0.361 0.0341 -0.428 -0.294
+#>  9 theta     [1,9]  [i,t]       -0.205 0.0274 -0.259 -0.152
+#> 10 theta     [1,10] [i,t]       -0.242 0.0328 -0.307 -0.178
+#> # ℹ 7,990 more rows
 ```
 
 #### Gibbs Sampling
 
-Using EM estimates as starting values of Gibbs Sampler.
-`control$PG_approx = TRUE` accelerates the implementation but is not
-recommended for small
-![n](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;n "n")
-data (e.g.,
-![n \< 10](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;n%20%3C%2010 "n < 10")).
+Using EM estimates as starting values of Gibbs sampler.
 
 ``` r
 fit_gibbs <- poEMirt_uncertainty(
@@ -164,7 +168,6 @@ fit_gibbs <- poEMirt_uncertainty(
   iter = 500,
   control = list(
     verbose = 50,
-    PG_approx = TRUE, 
     warmup = 100,
     thin = 5
   )
@@ -187,17 +190,17 @@ fit_gibbs <- poEMirt_uncertainty(
 summary(fit_gibbs, parameter = "theta", ci = 0.95)
 #> * Summarizing following parameters: theta.
 #> # A tibble: 8,000 × 9
-#>    parameter index   reference   mean median     sd ci_lwr ci_upr  rhat
-#>    <chr>     <chr>   <chr>      <dbl>  <dbl>  <dbl>  <dbl>  <dbl> <dbl>
-#>  1 theta     [1, 1]  [i, t]    -0.527 -0.528 0.0629 -0.667 -0.400 0.995
-#>  2 theta     [1, 2]  [i, t]    -0.555 -0.557 0.0337 -0.620 -0.488 0.999
-#>  3 theta     [1, 3]  [i, t]    -0.458 -0.459 0.0310 -0.521 -0.405 0.994
-#>  4 theta     [1, 4]  [i, t]    -0.544 -0.540 0.0391 -0.631 -0.475 0.993
-#>  5 theta     [1, 5]  [i, t]    -0.470 -0.470 0.0635 -0.607 -0.361 1.02 
-#>  6 theta     [1, 6]  [i, t]    -0.361 -0.367 0.0823 -0.505 -0.208 1.00 
-#>  7 theta     [1, 7]  [i, t]    -0.345 -0.347 0.0572 -0.451 -0.250 0.994
-#>  8 theta     [1, 8]  [i, t]    -0.307 -0.300 0.0387 -0.381 -0.230 1.01 
-#>  9 theta     [1, 9]  [i, t]    -0.195 -0.196 0.0433 -0.272 -0.117 1.02 
-#> 10 theta     [1, 10] [i, t]    -0.245 -0.244 0.0528 -0.340 -0.140 1.04 
-#> # … with 7,990 more rows
+#>    parameter index  reference   mean median     sd ci_lwr ci_upr  rhat
+#>    <chr>     <chr>  <chr>      <dbl>  <dbl>  <dbl>  <dbl>  <dbl> <dbl>
+#>  1 theta     [1,1]  [i,t]     -0.537 -0.541 0.0549 -0.635 -0.433 0.997
+#>  2 theta     [1,2]  [i,t]     -0.557 -0.553 0.0400 -0.641 -0.488 1.00 
+#>  3 theta     [1,3]  [i,t]     -0.471 -0.469 0.0360 -0.534 -0.395 0.991
+#>  4 theta     [1,4]  [i,t]     -0.547 -0.550 0.0394 -0.605 -0.471 0.992
+#>  5 theta     [1,5]  [i,t]     -0.463 -0.464 0.0711 -0.594 -0.331 1.00 
+#>  6 theta     [1,6]  [i,t]     -0.374 -0.374 0.0695 -0.507 -0.249 1.00 
+#>  7 theta     [1,7]  [i,t]     -0.349 -0.349 0.0596 -0.465 -0.245 1.02 
+#>  8 theta     [1,8]  [i,t]     -0.313 -0.309 0.0465 -0.402 -0.222 1.00 
+#>  9 theta     [1,9]  [i,t]     -0.203 -0.203 0.0445 -0.290 -0.123 1.01 
+#> 10 theta     [1,10] [i,t]     -0.244 -0.245 0.0501 -0.344 -0.151 0.997
+#> # ℹ 7,990 more rows
 ```

@@ -18,7 +18,7 @@ poEMirt(
 
 \item{model}{A string, one of "static" or "dynamic".}
 
-\item{constraint}{An integer scalar or vector (for dynamic model, the same length as the number of sessions), index of an individual i (the location of i) whose latent trait is always set positive.}
+\item{constraint}{An integer scalar or vector (for dynamic model, the same length as the number of times), index of an individual i (the location of i) whose latent trait is always set positive.}
 
 \item{init}{A list, containing initial values (optional).
 \itemize{
@@ -30,9 +30,9 @@ poEMirt(
 \item{priors}{a list, containing prior distributions (optional).
 \itemize{
   \item \code{a0} A double or J x max(K)-1 matrix, prior mean of alpha. Default is 0.
-  \item \code{A0} A double or J x max(K)-1 matrix, prior variance of alpha. Default is 25.
+  \item \code{A0} A double or J x max(K)-1 matrix, prior variance of alpha. Default is 1.
   \item \code{b0} A double or J x max(K)-1 matrix, prior mean of beta Default is 0.
-  \item \code{B0} A double or J x max(K)-1 matrix, prior variance of beta. Default is 25.
+  \item \code{B0} A double or J x max(K)-1 matrix, prior variance of beta. Default is 1.
   \item \code{m0} A double or I length vector, prior mean of theta_i0 for dynamic model. Default is 0. 
   \item \code{C0} A double or I length vector, prior variance of theta_i0 for dynamic model. Default is 1.
   \item \code{Delta} A double or I length vector, prior evolution variance of theta_it for dynamic model. Default is 0.01.

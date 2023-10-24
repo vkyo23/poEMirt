@@ -9,7 +9,7 @@
 \arguments{
 \item{object}{An object class of \code{poEMirtFit}.}
 
-\item{...}{Parameters to \code{summary()}.}
+\item{...}{Other arguments to \code{summary()}.}
 }
 \description{
 \code{summary.poEMirtFit} returns a summary of \code{poEMirtData} object.
