@@ -2,7 +2,6 @@
 #define __POEMIRTBASE__INCLUDED__
 
 #include <RcppArmadillo.h>
-#include "helper.h"
 using namespace Rcpp;
 using namespace arma;
 
@@ -11,10 +10,11 @@ class poEMirtbase
 public:
   
   poEMirtbase(const cube &Y,
-              const mat &N,
-              const mat &alpha_init,
-              const mat &beta_init,
-              const vec &theta_init,
+              const cube &S,
+              const cube &Nks,
+              mat alpha_old,
+              mat beta_old,
+              vec theta_old,
               const std::vector<vec>& unique_categories,
               const mat &a0,
               const mat &A0,
@@ -32,6 +32,7 @@ public:
   mat update_alpha();
   mat update_beta();
   vec update_theta();
+  void calc_ll();
   void convcheck(int g);
   void fit();
   List output();
@@ -41,14 +42,12 @@ public:
 private:
   
   const cube &Y;
-  const mat &N;
+  const cube &S;
+  const cube &Nks;
   
   mat alpha, alpha_old;
-  const mat &alpha_init;
   mat beta, beta_old;
-  const mat &beta_init;
   vec theta, theta_old;
-  const vec &theta_init;
   cube Omega;
   
   const std::vector<vec> &unique_categories;
@@ -57,9 +56,6 @@ private:
   const mat &A0;
   const mat &b0;
   const mat &B0;
-  
-  cube Nks;
-  cube S;
   
   const int &constraint;
   const bool &std;
@@ -71,7 +67,7 @@ private:
   
   mat convmat;
   bool check;
-  vec log_likelihood;
+  std::vector<double> log_likelihood;
   
   int iter;
   bool converge;

@@ -23,7 +23,7 @@ poEMirt_uncertainty(
 
 \item{control}{A list of model controls. This can include following elements.
 \itemize{
-  \item \code{save_item_parameters} A bool. If TRUE, the function keeps item parameters. Default is FALSE.
+  \item \code{save_item_parameters} A bool. If TRUE, the function keeps item parameters. Default is TRUE.
   \item \code{verbose} An integer of verbose. Default is NULL.
   \item \code{thread} An integer of threads (only for Bootstrap). Default is 1. Status messages will not be printed if \code{thread} > 1.
   \item \code{warmup} An integer (only for Gibbs). The number of warmup iterations for Gibbs sampling. Default is 100.

@@ -4,6 +4,8 @@
 #' @param data An object of \code{poEMirtData} via \code{read_poEMirt()}. 
 #' @param model A string, one of "static" or "dynamic".
 #' @param constraint An integer scalar or vector (for dynamic model, the same length as the number of times), index of an individual i (the location of i) whose latent trait is always set positive.
+#' @param alpha_fix A bool, whether fixes alpha of same repeated items or not. Default is FALSE.
+#' @param theta_std A bool, whether standardizes theta or not. Default is FALSE
 #' @param init A list, containing initial values (optional).
 #' \itemize{
 #'   \item \code{alpha} J x max(K)-1 matrix of alpha. Missing values must be 0.
@@ -22,7 +24,6 @@
 #' }
 #' @param control A list of model controls.
 #' \itemize{
-#'   \item \code{std} A bool, whether latent traits are standardized or not. Default is FALSE.  
 #'   \item \code{compute_ll} A bool, whether compute log-likelihood for each iteration or not. Default is FALSE.
 #'   \item \code{maxit} An integer, maximum number of iterations for EM. Default is 500.
 #'   \item \code{tol} A double (< 1), convergence threshold. Default is 1e-6.
@@ -72,6 +73,8 @@
 poEMirt <- function(data, 
                     model = c("static", "dynamic"), 
                     constraint = NULL,
+                    alpha_fix = FALSE,
+                    theta_std = FALSE,
                     init = NULL, 
                     priors = NULL, 
                     control = NULL) {
@@ -90,10 +93,19 @@ poEMirt <- function(data,
   if (model == "dynamic") {
     T <- data$size$T
     timemap <- data$dynamic$timemap
-    item_timemap <- data$dynamic$item_timemap - 1
-    item_match <- data$dynamic$item_match
+    item_timemap <- data$dynamic$item_timemap
   }
   unq_cat <- data$categories
+  
+  if (alpha_fix) {
+    if (!exists("rep", data)) {
+      stop("Cannot detect repeated items. Try `alpha_fix = FALSE` or make sure your j in `read_poEMirt()`.")
+    } else {
+      uJ_J <- data$rep$processed
+    }
+  } else {
+    uJ_J <- list(NA)
+  }
   
   # Priors
   if (is.null(priors)) {
@@ -218,7 +230,6 @@ poEMirt <- function(data,
   } 
   
   # Control
-  if (!exists("std", control)) control$std <- FALSE
   if (!exists("compute_ll", control)) control$compute_ll <- FALSE
   if (!exists("maxit", control)) control$maxit <- 500
   if (!exists("tol", control)) control$tol <- 1e-6
@@ -227,56 +238,61 @@ poEMirt <- function(data,
   verb <- ifelse(is.null(control$verbose), control$maxit+1, control$verbose)
   
   # Fitting
-  cat("\n=== Expectation-Maximization ===\n")
+  cat("* Expectation-Maximization\n")
   stime <- proc.time()[3]
   if (model == "dynamic") {
     fit <- poEMirtdynamic_fit(
-      Y = data$response,
-      N = data$trial,
-      alpha_init = init$alpha,
-      beta_init = init$beta,
-      theta_init = init$theta,
-      unique_categories = data$categories,
-      timemap = timemap,
-      timemap2 = data$dynamic$timemap2,
-      item_timemap = item_timemap,
-      item_match = item_match - 1,
-      a0 = priors$a0,
-      A0 = priors$A0,
-      b0 = priors$b0,
-      B0 = priors$B0,
-      m0 = priors$m0,
-      C0 = priors$C0,
-      Delta = priors$Delta,
-      constraint = constraint - 1,
-      std = control$std,
-      maxit = control$maxit,
-      verbose = verb,
-      tol = control$tol,
+      Y = data$data$response, 
+      S = data$data$modelinput$S, 
+      Nks = data$data$modelinput$Nks, 
+      alpha_old = init$alpha, 
+      beta_old = init$beta, 
+      theta_old = init$theta, 
+      unique_categories = data$categories, 
+      uJ_J = uJ_J, 
+      timemap2 = data$dynamic$timemap2, 
+      item_timemap = item_timemap, 
+      IT = data$dynamic$index$IT, 
+      ITJ = data$dynamic$index$ITJ, 
+      a0 = priors$a0, 
+      A0 = priors$A0, 
+      b0 = priors$b0, 
+      B0 = priors$B0, 
+      m0 = priors$m0, 
+      C0 = priors$C0, 
+      Delta = priors$Delta, 
+      constraint = constraint - 1, 
+      alpha_fix = alpha_fix, 
+      std = theta_std, 
+      maxit = control$maxit, 
+      verbose = verb, 
+      tol = control$tol, 
       compute_ll = control$compute_ll
     )
   } else {
     fit <- poEMirtbase_fit(
-      Y = data$response,
-      N = data$trial,
-      alpha_init = init$alpha,
-      beta_init = init$beta,
-      theta_init = init$theta,
-      unique_categories = unq_cat,
-      a0 = priors$a0,
-      A0 = priors$A0,
-      b0 = priors$b0,
-      B0 = priors$B0,
-      constraint = constraint - 1,
-      std = control$std,
-      maxit = control$maxit,
-      verbose = verb,
-      tol = control$tol,
+      Y = data$data$response, 
+      S = data$data$modelinput$S, 
+      Nks = data$data$modelinput$Nks, 
+      alpha_old = init$alpha, 
+      beta_old = init$beta, 
+      theta_old = init$theta, 
+      unique_categories = data$categories, 
+      a0 = priors$a0, 
+      A0 = priors$A0, 
+      b0 = priors$b0, 
+      B0 = priors$B0, 
+      constraint = constraint - 1, 
+      std = theta_std, 
+      maxit = control$maxit, 
+      verbose = verb, 
+      tol = control$tol, 
       compute_ll = control$compute_ll
     )
   }
   # Output
-  el <- round(proc.time()[3] - stime, 1)
+  etime <- proc.time()[3]
+  el <- round(etime - stime, 1)
   if (fit$converge) {
     cat("* Model converged at iteration", fit$iter, ":", el, "sec.\n")
   } else {
@@ -285,15 +301,16 @@ poEMirt <- function(data,
   fit$alpha[fit$alpha == 0] <- NA
   fit$beta[fit$beta == 0] <- NA
   fit$theta[fit$theta == 0] <- NA
-  rownames(fit$alpha) <- rownames(fit$beta) <- colnames(data$response)
-  colnames(fit$alpha) <- colnames(fit$beta) <- dimnames(data$response)[[3]][-maxK]
-  rownames(fit$theta) <- rownames(data$response)
+  rownames(fit$alpha) <- rownames(fit$beta) <- colnames(data$data$response)
+  colnames(fit$alpha) <- colnames(fit$beta) <- dimnames(data$data$response)[[3]][-maxK]
+  rownames(fit$theta) <- rownames(data$data$response)
   if (model == "dynamic") {
     colnames(fit$theta) <- 1:data$size$T
   } else {
     colnames(fit$theta) <- 1
   }
   colnames(fit$conv) <- c("alpha", "beta", "theta")
+  data$uniqueJ_J <- uJ_J
   L <- list(
     parameter = list(
       alpha = fit$alpha,
@@ -308,13 +325,21 @@ poEMirt <- function(data,
       data = data, 
       model = model, 
       constraint = constraint,
+      alpha_fix = alpha_fix,
+      theta_std = theta_std,
       init = init, 
       priors = priors, 
       control = control
     )
   )
   if (!control$compute_ll) L$log_likelihood <- NULL
-  L$.Call <- match.call()
+  L$call <- match.call()
+  L$time <- list(
+    date = date(),
+    start = stime,
+    end = etime,
+    elapsed = el
+  )
   class(L) <- c("poEMirtFit", class(L))
   return(L)
 }

@@ -21,7 +21,7 @@ knitr::opts_chunk$set(
 [![R-CMD-check](https://github.com/vkyo23/poEMirt/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/vkyo23/poEMirt/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
-`poEMirt` is an `R` package that implements fast EM item response theory for cross-national public opinion data to estimate dynamic latent public opinion. The model utilizes the Polya-Gamma data augmentation scheme (Polson, Scott & Windle 2013) and exact EM algorithm (Goplerud 2019) for fast computation. This package incorporates direct C++ programming and does not depend on ready-made other statistical modeling languages, thus the computation is more efficient. It can be applied to not only binomial and multinomial outcomes but also bernoulli and categorial ones. Users can estimate statistical uncertainty by parametric bootstrap and Gibbs Sampling.
+`poEMirt` is an `R` package that implements fast EM item response theory for cross-national public opinion data to estimate dynamic latent public opinion. The model utilizes the Polya-Gamma data augmentation scheme (Polson, Scott & Windle 2013) and exact EM algorithm (Goplerud 2019) for fast computation. This package directly incorporates C++ programming and does not depend on ready-made other statistical modeling languages, thus the computation is much efficient. It can be applied to not only binomial and multinomial outcomes but also bernoulli and categorial ones. Users can estimate statistical uncertainty by parametric bootstrap and Gibbs Sampling.
 
 ## Installation
 
@@ -37,6 +37,9 @@ remotes::install_github("vkyo23/poEMirt")
 
 ```{r}
 library(poEMirt)
+library(tidyr)
+library(dplyr)
+library(stringr)
 data("sim_data_dynamic")
 
 head(sim_data_dynamic)
@@ -64,6 +67,42 @@ fit <- poEMirt(
 # Summarize the result
 summary(fit, parameter = "theta")
 ```
+
+#### Repeated items and bridging estimation
+
+Public opinion data typically contains repeated items over time. 
+To strictly estimate the change in latent traits, one should do bridging estimation by pinning down the location of cutpoints (alpha) of repeated items (Baiely 2007). 
+In the previous example, we saw that `j` is unique in terms of `t`, but in this example, simulated data below has repeated `j`. `read_poEMirt()` automatically detects such repeated items and creates a poEMirt-readable object.
+Users can do bridging estimation by setting `alpha_fix = TRUE` in `poEMirt()`.
+
+```{r}
+# Repeated item data
+data("sim_data_dynamic_repeated")
+head(sim_data_dynamic_repeated)
+
+data2 <- read_poEMirt(
+  data = sim_data_dynamic_repeated,
+  responses = paste0('y', 1:5),
+  i = "i",
+  j = "j",
+  t = "t"
+)
+
+# Fit the model
+fit2 <- poEMirt(
+  data = data2,
+  model = "dynamic",
+  alpha_fix = TRUE, # Fix alpha or not
+  control = list(
+    verbose = 10
+  )
+)
+
+# Same cutpoint estimates!
+summary(fit2, parameter = "alpha") |> 
+  filter(str_detect(index, "\\[\\d+,1,.+"))
+```
+
 
 ### Estimation of statistical uncertainty
 
@@ -125,8 +164,6 @@ Notably, `poEMirt` can also be applied to roll-call vote, individual-level surve
 Using the roll-call vote data of U.S. Supreme Court `Rehnquist` from [`{MCMCpack}`](https://github.com/cran/MCMCpack) by Martin, Quinn & Park (2011). The outcome of interest is 1 if a judge votes yea and 0 if nay.
 
 ```{r}
-library(tidyr)
-library(dplyr)
 data(Rehnquist, package = "MCMCpack")
 
 df <- Rehnquist |> 
@@ -162,7 +199,7 @@ data <- read_poEMirt(
 summary(data)
 
 # Constraint
-con <- which(rownames(data$response) == "Thomas")
+con <- which(rownames(data$data$response) == "Thomas")
 con <- rep(con, max(df$time))
 
 # Fit
@@ -221,7 +258,7 @@ data <- read_poEMirt(
 summary(data)
 
 # Constraint
-con <- which(rownames(data$response) == "United States")
+con <- which(rownames(data$data$response) == "United States")
 con <- rep(con, max(df$session))
 
 # Fit
@@ -229,16 +266,35 @@ fit <- poEMirt(
   data = data,
   model = "dynamic",
   constraint = con,
+  theta_std = TRUE, # Standardizing theta
   control = list(
     verbose = 10
   )
 )
 
-summary(fit, parameter = "theta")
+# Visualize
+library(ggplot2)
+summary(fit, parameter = "theta") |> 
+  filter(str_detect(index, "China|France|Russia|United Kingdom|United States")) |> 
+  mutate(
+    country = str_extract(index, "China|France|Russia|United Kingdom|United States"),
+    t = str_extract(index, "\\d+") |> 
+      as.integer()
+  ) |> 
+  ggplot(aes(x = t, y = estimate)) +
+  geom_line(aes(color = country, linetype = country)) +
+  geom_point(aes(color = country, shape = country)) +
+  theme_bw() +
+  theme(
+    legend.position = "bottom",
+    legend.title = element_blank()
+  ) +
+  xlab("Session") + ylab("Ideal Point")
 ```
 
 # References
 
+- Bailey, M. A. (2007). "Comparable preference estimates across time and institutions for the court, congress, and presidency". *American Journal of Political Science*, 51(3), 433-448.
 - Goplerud, M. (2019). "A Multinomial Framework for Ideal Point Estimation". *Political Analysis*, 27(1), 69-89.
 - Martin A.D., Quinn K.M. & Park J.H. (2011). "MCMCpack: Markov Chain Monte Carlo in R." *Journal of Statistical Software*, 42(9), 22.
 - Polson, N. G., Scott, J. G., & Windle, J. (2013). "Bayesian inference for logistic models using Pólya–Gamma latent variables". *Journal of the American statistical Association*, 108(504), 1339-1349.

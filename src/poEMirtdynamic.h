@@ -1,8 +1,7 @@
-#ifndef __poEMIRTDYNAMIC__INCLUDED__
-#define __poEMIRTDYNAMIC__INCLUDED__
+#ifndef __POEMIRTDYNAMIC__INCLUDED__
+#define __POEMIRTDYNAMIC__INCLUDED__
 
 #include <RcppArmadillo.h>
-#include "helper.h"
 using namespace Rcpp;
 using namespace arma;
 
@@ -11,15 +10,17 @@ class poEMirtdynamic
 public:
   
   poEMirtdynamic(const cube &Y,
-                 const mat &N,
-                 const mat &alpha_init,
-                 const mat &beta_init,
-                 const mat &theta_init,
+                 const cube &S,
+                 const cube &Nks,
+                 mat alpha_old,
+                 mat beta_old,
+                 mat theta_old,
                  const std::vector<vec> &unique_categories,
-                 const mat &timemap,
+                 const std::vector<vec> &uJ_J,
                  const mat &timemap2,
                  const vec &item_timemap,
-                 const vec &item_match,
+                 const std::vector<uvec> &IT,
+                 const std::vector<std::vector<uvec>> &ITJ,
                  const mat &a0,
                  const mat &A0,
                  const mat &b0,
@@ -28,6 +29,7 @@ public:
                  const vec &C0,
                  const vec &Delta,
                  const vec &constraint,
+                 const bool &alpha_fix,
                  const bool &std,
                  const int &maxit,
                  const int &verbose,
@@ -37,8 +39,10 @@ public:
   
   void get_EOmega();
   mat update_alpha();
+  mat update_alpha_fixed();
   mat update_beta();
   mat update_theta();
+  void calc_ll();
   void convcheck(int g);
   void fit();
   List output();
@@ -48,26 +52,23 @@ public:
 private:
   
   const cube &Y;
-  const mat &N;
+  const cube &S;
+  const cube &Nks;
   
   mat alpha;
   mat alpha_old;
-  const mat &alpha_init;
   mat beta;
   mat beta_old;
-  const mat &beta_init;
   mat theta;
   mat theta_old;
-  const mat &theta_init;
   cube Omega;
   
   const std::vector<vec> &unique_categories;
-  const mat &timemap;
+  const std::vector<vec> &uJ_J;
   const mat &timemap2;
   const vec &item_timemap;
-  const vec &item_match;
-  std::vector<uvec> time_list;
-  std::vector<std::vector<uvec>> ind_item_time_list;
+  const std::vector<uvec> &IT;
+  const std::vector<std::vector<uvec>> &ITJ;
   
   const mat &a0;
   const mat &A0;
@@ -77,9 +78,7 @@ private:
   const vec &C0;
   const vec &Delta;
   
-  cube S;
-  cube Nks;
-  
+  const bool &alpha_fix;
   const vec &constraint;
   const bool &std;
   const int &maxit;
@@ -90,7 +89,7 @@ private:
   mat convmat;
   bool check;
   double ll;
-  vec log_likelihood;
+  std::vector<double> log_likelihood;
   
   int iter;
   bool converge;

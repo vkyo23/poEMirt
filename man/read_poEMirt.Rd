@@ -4,30 +4,25 @@
 \alias{read_poEMirt}
 \title{Preparing for \code{poEMirt()}}
 \usage{
-read_poEMirt(
-  data,
-  responses,
-  i,
-  j,
-  t = NULL,
-  no_smooth = FALSE,
-  matched_j = NULL
-)
+read_poEMirt(dataframe, responses, i, j, t = NULL, smooth = NULL)
 }
 \arguments{
-\item{data}{A data.frame or tbl_df object.}
+\item{dataframe}{A data.frame or tbl_df object.}
 
-\item{responses}{Names of columns of responses. Last response category will be the baseline.}
+\item{responses}{Names of columns of responses. Last response category for each j will be the baseline.}
 
-\item{i}{A name of individual IDs column.}
+\item{i}{A name of individual IDs column. Must be an integer column.}
 
-\item{j}{A name of item IDs column.}
+\item{j}{A name of item IDs column. Must be an integer column.}
 
-\item{t}{A name of time period IDs column (for `dynamic` model).}
+\item{t}{A name of time period IDs column (for `dynamic` model). Must be an integer column.}
 
-\item{no_smooth}{A boot. If TRUE, the model does not estimate latent traits of i in missing years (for `dynamic` model). Default is FALSE.}
-
-\item{matched_j}{A name of column that contains item IDs of matched item.}
+\item{smooth}{A character, the smoothing method. 
+\itemize{
+  \item \code{"no"} No smoothing.
+  \item \code{"default"} Using from the start time of i to T.
+  \item \code{"finite"} Using from the start time of it to the end time.
+ }}
 }
 \value{
 A \code{poEMirtData} object.
@@ -41,7 +36,7 @@ data("sim_data_dynamic")
 
 # Convert into poEMirt-readable data
 data <- read_poEMirt(
-  data = sim_data_dynamic,
+  dataframe = sim_data_dynamic,
   responses = paste0('y', 1:5),
   i = "i",
   j = "j",

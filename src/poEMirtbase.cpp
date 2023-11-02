@@ -1,10 +1,11 @@
 #include "poEMirtbase.h"
 
 poEMirtbase::poEMirtbase(const cube &Y,
-                         const mat &N,
-                         const mat &alpha_init,
-                         const mat &beta_init,
-                         const vec &theta_init,
+                         const cube &S,
+                         const cube &Nks,
+                         mat alpha_old,
+                         mat beta_old,
+                         vec theta_old,
                          const std::vector<vec> &unique_categories,
                          const mat &a0,
                          const mat &A0,
@@ -18,10 +19,11 @@ poEMirtbase::poEMirtbase(const cube &Y,
                          const bool &compute_ll)
   :
   Y(Y),
-  N(N),
-  alpha_init(alpha_init),
-  beta_init(beta_init),
-  theta_init(theta_init),
+  S(S),
+  Nks(Nks),
+  alpha_old(alpha_old),
+  beta_old(beta_old),
+  theta_old(theta_old),
   unique_categories(unique_categories),
   a0(a0),
   A0(A0),
@@ -33,13 +35,12 @@ poEMirtbase::poEMirtbase(const cube &Y,
   verbose(verbose),
   tol(tol),
   compute_ll(compute_ll),
-  I(Y.n_rows),
-  J(Y.n_cols),
-  K(alpha_init.n_cols)
+  I(S.n_rows),
+  J(S.n_cols),
+  K(alpha_old.n_cols)
 {
   Omega = cube(I, J, K);
   convmat = mat(maxit, 3);
-  log_likelihood = vec(maxit);
   check = false;
   iter = 0;
   converge = true;
@@ -51,29 +52,37 @@ poEMirtbase::~poEMirtbase()
   
 }
 
+void poEMirtbase::calc_ll()
+{
+  ll = 0.0;
+  for (int i = 0; i < I; i++) {
+    for (int j = 0; j < J; j++) {
+      vec unq = unique_categories[j];
+      for (unsigned int k = 0; k < (unq.size() - 1); k++) {
+        if (!NumericVector::is_na(Y(i, j, unq[k]))) {
+          double psi = alpha_old(j, unq[k]) + beta_old(j, unq[k]) * theta_old[i];
+          if (Nks(i, j, unq[k]) > 0) {
+            ll += S(i, j, unq[k]) * psi - Omega(i, j, unq[k]) * std::pow(psi, 2.0) / 2.0;
+          } else {
+            break;
+          }
+        }
+      }
+    }
+  }
+  log_likelihood.push_back(ll);
+}
+
 void poEMirtbase::get_EOmega()
 {
-  if (compute_ll) {
-    ll = 0;
-  }
   for (int i = 0; i < I; i++) {
-    if (compute_ll) {
-      ll -= std::pow(theta_old[i], 2.0) / 2.0;
-    }
     for (int j = 0; j < J; j++) {
-      vec unq = unique_categories[j]-1;
-      for (int k = 0; k < (unq.size() - 1); k++) {
+      vec unq = unique_categories[j];
+      for (unsigned int k = 0; k < (unq.size() - 1); k++) {
         if (!NumericVector::is_na(Y(i, j, unq[k]))) {
           double psi = alpha_old(j, unq[k]) + beta_old(j, unq[k]) * theta_old[i];
           if (Nks(i, j, unq[k]) > 0) {
             Omega(i, j, unq[k]) = (Nks(i, j, unq[k]) / (2 * psi)) * std::tanh(psi / 2);
-            if (compute_ll) {
-              ll += S(i, j, unq[k]) * psi - Omega(i, j, unq[k]) * std::pow(psi, 2.0) / 2.0;
-              if (i == 0) {
-                ll = ll - std::pow(beta_old(j, unq[k]) - b0(j, unq[k]), 2.0) / (2.0 * B0(j, unq[k])) -
-                  std::pow(alpha_old(j, unq[k]) - a0(j, unq[k]), 2.0) / (2.0 * A0(j, unq[k]));
-              }
-            }
           } else {
             break;
           }
@@ -90,8 +99,8 @@ vec poEMirtbase::update_theta()
     double sig_part = 0;
     double mu_part = 0;
     for (int j = 0; j < J; j++) {
-      vec unq = unique_categories[j]-1;
-      for (int k = 0; k < (unq.size() - 1); k++) {
+      vec unq = unique_categories[j];
+      for (unsigned int k = 0; k < (unq.size() - 1); k++) {
         if (!NumericVector::is_na(Y(i, j, unq[k]))) {
           if (Nks(i, j, unq[k]) > 0) {
             sig_part += Omega(i, j, unq[k]) * std::pow(beta_old(j, unq[k]), 2.0);
@@ -103,7 +112,7 @@ vec poEMirtbase::update_theta()
       } 
     }
     sig_part = sig_part + 1.0;
-    draw[i] = (1 / sig_part) * mu_part;
+    draw[i] = mu_part / sig_part;
   }
   if (draw[constraint] < 0) {
     draw = -draw;
@@ -118,8 +127,8 @@ mat poEMirtbase::update_beta()
 {
   mat draw(J, K);
   for (int j = 0; j < J; j++) {
-    vec unq = unique_categories[j]-1;
-    for (int k = 0; k < (unq.size()-1); k++) {
+    vec unq = unique_categories[j];
+    for (unsigned int k = 0; k < (unq.size()-1); k++) {
       double sig_part = 0;
       double mu_part = 0;
       for (int i = 0; i < I; i++) {
@@ -130,7 +139,7 @@ mat poEMirtbase::update_beta()
       }
       sig_part += 1 / B0(j, unq[k]);
       mu_part += b0(j, unq[k]) / B0(j, unq[k]);
-      draw(j, unq[k]) = (1 / sig_part) * mu_part;
+      draw(j, unq[k]) = mu_part / sig_part;
     }
   }
   return draw;
@@ -140,8 +149,8 @@ mat poEMirtbase::update_alpha()
 {
   mat draw(J, K);
   for (int j = 0; j < J; j++) {
-    vec unq = unique_categories[j]-1;
-    for (int k = 0; k < (unq.size() - 1); k++) {
+    vec unq = unique_categories[j];
+    for (unsigned int k = 0; k < (unq.size() - 1); k++) {
       double sig_part = 0;
       double mu_part = 0;
       for (int i = 0; i < I; i++) {
@@ -152,7 +161,7 @@ mat poEMirtbase::update_alpha()
       }
       sig_part += 1 / A0(j, unq[k]);
       mu_part += a0(j, unq[k]) / A0(j, unq[k]);
-      draw(j, unq[k]) = (1 / sig_part) * mu_part;
+      draw(j, unq[k]) = mu_part / sig_part;
     }
   }
   return draw;
@@ -164,52 +173,32 @@ void poEMirtbase::convcheck(int g)
   vec tmp_alpha2 = alpha.elem(find(alpha != 0));
   vec tmp_beta1 = beta_old.elem(find(beta_old != 0));
   vec tmp_beta2 = beta.elem(find(beta != 0));
-  convmat(g-1, 0) = cor(tmp_alpha1, tmp_alpha2).min();
-  convmat(g-1, 1) = cor(tmp_beta1, tmp_beta2).min();
-  convmat(g-1, 2) = cor(theta, theta_old).min();
-  
-  check = ((1 - convmat.row(g-1).min()) < tol);
+  convmat(g, 0) = cor(tmp_alpha1, tmp_alpha2).min();
+  convmat(g, 1) = cor(tmp_beta1, tmp_beta2).min();
+  convmat(g, 2) = cor(theta, theta_old).min();
+  check = ((1 - convmat.row(g).min()) < tol);
 }
 
 void poEMirtbase::fit() 
 {
-  
-  // Assign initial values
-  alpha_old = alpha_init;
-  beta_old = beta_init;
-  theta_old = theta_init;
-  
-  // Aux
-  List tmp = construct_sb_auxs(Y, N, unique_categories);
-  S = as<cube>(wrap(tmp["S"]));
-  Nks = as<cube>(wrap(tmp["Nks"]));
-  
   for (int g = 0; g < maxit; g++) {
     checkUserInterrupt();
     
     // Estep
     get_EOmega();
-    if (g != 0) {
-      if (compute_ll) {
-        log_likelihood[g-1] = ll;
-      }
-    }
     
     // Mstep
     theta = update_theta();
     beta = update_beta();
     alpha = update_alpha();
-    
+  
     if (g != 0) {
       convcheck(g);
+      if (compute_ll) {
+        calc_ll();
+      }
       if (check) {
-        uvec seqq = as<uvec>(wrap(seq(0, g-1)));
-        convmat = convmat.rows(seqq);
-        if (compute_ll) {
-          get_EOmega();
-          log_likelihood[g] = ll;
-        }
-        log_likelihood = log_likelihood.rows(0, g);
+        convmat = convmat.rows(0, g);
         iter = g;
         break;
       } else if (g == (maxit - 1)) {
@@ -217,7 +206,7 @@ void poEMirtbase::fit()
         iter = maxit;
         break;
       } else if (g % verbose == 0) {
-        Rcout << "Iteration " << g << ": eval = " << (1 - convmat.row(g-1).min()) << '\n';
+        Rcout << "Iteration " << g << ": eval = " << (1 - convmat.row(g).min()) << '\n';
       }
     }
     
@@ -244,11 +233,12 @@ List poEMirtbase::output()
 
 //[[Rcpp::export]]
 List poEMirtbase_fit(const arma::cube &Y,
-                     const arma::mat &N,
-                     const arma::mat &alpha_init,
-                     const arma::mat &beta_init,
-                     const arma::vec &theta_init,
-                     const std::vector<arma::vec> &unique_categories,
+                     const arma::cube &S,
+                     const arma::cube &Nks,
+                     arma::mat alpha_old,
+                     arma::mat beta_old,
+                     arma::vec theta_old,
+                     const std::vector<arma::vec>& unique_categories,
                      const arma::mat &a0,
                      const arma::mat &A0,
                      const arma::mat &b0,
@@ -262,10 +252,11 @@ List poEMirtbase_fit(const arma::cube &Y,
 {
   // Instance
   poEMirtbase Model(Y,
-                    N,
-                    alpha_init,
-                    beta_init,
-                    theta_init,
+                    S,
+                    Nks,
+                    alpha_old,
+                    beta_old,
+                    theta_old,
                     unique_categories,
                     a0,
                     A0,

@@ -2,7 +2,6 @@
 #define __POEMIRTBASE_GIBBS__INCLUDED__
 
 #include <RcppArmadillo.h>
-#include "helper.h"
 #include "dist.h"
 using namespace Rcpp;
 using namespace arma;
@@ -13,7 +12,8 @@ class poEMirtbase_gibbs
 public:
   
   poEMirtbase_gibbs(const cube &Y,
-                    const mat &N,
+                    const cube &S,
+                    const cube &Nks,
                     mat alpha,
                     mat beta,
                     vec theta,
@@ -44,7 +44,8 @@ public:
 private:
   
   const cube &Y;
-  const mat &N;
+  const cube &S;
+  const cube &Nks;
   
   mat alpha;
   mat beta;
@@ -61,9 +62,6 @@ private:
   const mat &A0;
   const mat &b0;
   const mat &B0;
-  
-  cube S;
-  cube Nks;
   
   const bool& PG_approx;
   const int &constraint;

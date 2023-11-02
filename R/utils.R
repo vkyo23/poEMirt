@@ -21,10 +21,10 @@ dimstat <- function(array, fun, ...) apply(array, c(1, 2), fun, ...)
 make_init <- function(data, priors, constraint = NULL) {
   # alpha and beta
   alpha_init <- beta_init <- matrix(0, data$size$J, data$size$maxK-1)
-  sums <- colSums(data$response, na.rm = TRUE)
+  sums <- colSums(data$data$response, na.rm = TRUE)
   for (j in 1:data$size$J) {
     #Kj <- max(data$categories[[j]])
-    cat <- data$categories[[j]]
+    cat <- data$categories[[j]]+1
     prob <- sums[j, ] / sum(sums[j, ])
     prob <- prob[cat]
     #prob <- prob[prob != 0]
@@ -37,7 +37,7 @@ make_init <- function(data, priors, constraint = NULL) {
   alpha_init[is.infinite(alpha_init) | is.na(alpha_init)] <- 0.1
   
   # theta
-  Yimp <- data$response[, , 1] / data$trial
+  Yimp <- data$data$response[, , 1] / data$data$trial
   Yimp <- apply(Yimp, 2, med_impute)
   theta_init <- scale(stats::prcomp(Yimp)$x[, 1])
   if (is.null(constraint)) {
@@ -48,12 +48,13 @@ make_init <- function(data, priors, constraint = NULL) {
   if (exists("dynamic", data)) {
     # Static IRT
     static_fit <- poEMirtbase_fit(
-      Y = data$response,
-      N = data$trial,
-      alpha_init = alpha_init,
-      beta_init = beta_init,
-      theta_init = theta_init,
-      unique_categories = data$categories,
+      Y = data$data$response,
+      S = data$data$modelinput$S, 
+      Nks = data$data$modelinput$Nks, 
+      alpha_old = alpha_init, 
+      beta_old = beta_init, 
+      theta_old = theta_init, 
+      unique_categories = data$categories, 
       a0 = priors$a0, 
       A0 = priors$A0,  
       b0 = priors$b0, 
@@ -113,12 +114,15 @@ poEMirt_boot <- function(fit, iter, verbose, save_item_parameters, thread, seed)
     for (b in 1:iter) {
       # Simulated response
       dd <- fit$info$data
-      dd$response <- predict.poEMirtFit(fit, type = "response")
+      dd$data$response <- predict.poEMirtFit(fit, type = "response", return = "array")
+      dd$data$modelinput <- construct_sb_auxs(dd$data$response, dd$data$trial, dd$categories)
       fit_boot <- quiet(
         poEMirt(
           data = dd,
           model = fit$info$model,
           constraint = fit$info$constraint,
+          alpha_fix = fit$info$alpha_fix,
+          theta_std = fit$info$theta_std,
           priors = fit$info$priors,
           control = fit$info$control
         )
@@ -153,12 +157,15 @@ poEMirt_boot <- function(fit, iter, verbose, save_item_parameters, thread, seed)
     ) %dorng% {
       # Simulated response
       dd <- fit$info$data
-      dd$response <- predict.poEMirtFit(fit, type = "response")
+      dd$data$response <- predict.poEMirtFit(fit, type = "response", return = "array")
+      dd$data$modelinput <- construct_sb_auxs(dd$data$response, dd$data$trial, dd$categories)
       fit_boot <- quiet(
         poEMirt(
           data = dd,
           model = fit$info$model,
           constraint = fit$info$constraint,
+          alpha_fix = fit$info$alpha_fix,
+          theta_std = fit$info$theta_std,
           priors = fit$info$priors,
           control = fit$info$control
         )

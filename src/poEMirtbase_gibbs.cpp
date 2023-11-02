@@ -1,16 +1,17 @@
 #include "poEMirtbase_gibbs.h"
 
 poEMirtbase_gibbs::poEMirtbase_gibbs(const cube &Y,
-                                     const mat &N,
+                                     const cube &S,
+                                     const cube &Nks,
                                      mat alpha,
                                      mat beta,
                                      vec theta,
-                                     const std::vector<vec> &unique_categories,
+                                     const std::vector<vec>& unique_categories,
                                      const mat &a0,
                                      const mat &A0,
                                      const mat &b0,
                                      const mat &B0,
-                                     const bool &PG_approx,
+                                     const bool& PG_approx,
                                      const int &constraint,
                                      const bool &std,
                                      const int &iter,
@@ -20,7 +21,8 @@ poEMirtbase_gibbs::poEMirtbase_gibbs(const cube &Y,
                                      const int &verbose)
   :
   Y(Y),
-  N(N),
+  S(S),
+  Nks(Nks),
   alpha(alpha),
   beta(beta),
   theta(theta),
@@ -37,8 +39,8 @@ poEMirtbase_gibbs::poEMirtbase_gibbs(const cube &Y,
   thin(thin),
   save_item_parameters(save_item_parameters),
   verbose(verbose),
-  I(Y.n_rows),
-  J(Y.n_cols),
+  I(S.n_rows),
+  J(S.n_cols),
   K(alpha.n_cols)
 {
   Omega = cube(I, J, K);
@@ -54,8 +56,8 @@ void poEMirtbase_gibbs::draw_Omega()
 {
   for (int i = 0; i < I; i++) {
     for (int j = 0; j < J; j++) {
-      vec unq = unique_categories[j]-1;
-      for (int k = 0; k < (unq.size() - 1); k++) {
+      vec unq = unique_categories[j];
+      for (unsigned int k = 0; k < (unq.size() - 1); k++) {
         if (!NumericVector::is_na(Y(i, j, unq[k]))) {
           double psi = alpha(j, unq[k]) + beta(j, unq[k]) * theta[i];
           if (Nks(i, j, unq[k]) != 0) {
@@ -79,8 +81,8 @@ void poEMirtbase_gibbs::draw_theta()
     double sig_part = 0;
     double mu_part = 0;
     for (int j = 0; j < J; j++) {
-      vec unq = unique_categories[j]-1;
-      for (int k = 0; k < (unq.size() - 1); k++) {
+      vec unq = unique_categories[j];
+      for (unsigned int k = 0; k < (unq.size() - 1); k++) {
         if (!NumericVector::is_na(Y(i, j, unq[k]))) {
           if (Nks(i, j, unq[k]) > 0) {
             sig_part += Omega(i, j, unq[k]) * std::pow(beta(j, unq[k]), 2.0);
@@ -105,8 +107,8 @@ void poEMirtbase_gibbs::draw_theta()
 void poEMirtbase_gibbs::draw_beta()
 {
   for (int j = 0; j < J; j++) {
-    vec unq = unique_categories[j]-1;
-    for (int k = 0; k < (unq.size()-1); k++) {
+    vec unq = unique_categories[j];
+    for (unsigned int k = 0; k < (unq.size()-1); k++) {
       double sig_part = 0;
       double mu_part = 0;
       for (int i = 0; i < I; i++) {
@@ -127,8 +129,8 @@ void poEMirtbase_gibbs::draw_beta()
 void poEMirtbase_gibbs::draw_alpha() 
 {
   for (int j = 0; j < J; j++) {
-    vec unq = unique_categories[j]-1;
-    for (int k = 0; k < (unq.size() - 1); k++) {
+    vec unq = unique_categories[j];
+    for (unsigned int k = 0; k < (unq.size() - 1); k++) {
       double sig_part = 0;
       double mu_part = 0;
       for (int i = 0; i < I; i++) {
@@ -148,11 +150,6 @@ void poEMirtbase_gibbs::draw_alpha()
 
 void poEMirtbase_gibbs::fit() 
 {
-  // Aux
-  List tmp = construct_sb_auxs(Y, N, unique_categories);
-  Nks = as<cube>(wrap(tmp["Nks"]));
-  S = as<cube>(wrap(tmp["S"]));
-  
   int g = 0;
   int total_iter = iter + warmup;
   if (warmup != 0) {
@@ -175,19 +172,11 @@ void poEMirtbase_gibbs::fit()
     draw_beta();
     draw_alpha();
     
-    if (thin == 1) {
-      theta_store.col(g - warmup) = theta;
+    if (g % thin == 0) {
+      theta_store.col((g - warmup) / thin) = theta;
       if (save_item_parameters) {
         beta_store.push_back(beta);
         alpha_store.push_back(alpha);
-      }
-    } else {
-      if (g % thin == 0) {
-        theta_store.col((g - warmup) / thin) = theta;
-        if (save_item_parameters) {
-          beta_store.push_back(beta);
-          alpha_store.push_back(alpha);
-        }
       }
     }
     
@@ -209,11 +198,12 @@ List poEMirtbase_gibbs::output()
 
 //[[Rcpp::export]]
 List poEMirtbase_gibbs_fit(const arma::cube &Y,
-                           const arma::mat &N,
+                           const arma::cube &S,
+                           const arma::cube &Nks,
                            arma::mat alpha,
                            arma::mat beta,
                            arma::vec theta,
-                           const std::vector<arma::vec> &unique_categories,
+                           const std::vector<arma::vec>& unique_categories,
                            const arma::mat &a0,
                            const arma::mat &A0,
                            const arma::mat &b0,
@@ -229,7 +219,8 @@ List poEMirtbase_gibbs_fit(const arma::cube &Y,
 {
   // Instance
   poEMirtbase_gibbs Model(Y,
-                          N,
+                          S,
+                          Nks,
                           alpha,
                           beta,
                           theta,

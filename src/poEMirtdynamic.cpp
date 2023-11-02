@@ -1,15 +1,17 @@
 #include "poEMirtdynamic.h"
 
 poEMirtdynamic::poEMirtdynamic(const cube &Y,
-                               const mat &N,
-                               const mat &alpha_init,
-                               const mat &beta_init,
-                               const mat &theta_init,
+                               const cube &S,
+                               const cube &Nks,
+                               mat alpha_old,
+                               mat beta_old,
+                               mat theta_old,
                                const std::vector<vec> &unique_categories,
-                               const mat &timemap,
+                               const std::vector<vec> &uJ_J,
                                const mat &timemap2,
                                const vec &item_timemap,
-                               const vec &item_match,
+                               const std::vector<uvec> &IT,
+                               const std::vector<std::vector<uvec>> &ITJ,
                                const mat &a0,
                                const mat &A0,
                                const mat &b0,
@@ -18,6 +20,7 @@ poEMirtdynamic::poEMirtdynamic(const cube &Y,
                                const vec &C0,
                                const vec &Delta,
                                const vec &constraint,
+                               const bool &alpha_fix,
                                const bool &std,
                                const int &maxit,
                                const int &verbose,
@@ -25,15 +28,17 @@ poEMirtdynamic::poEMirtdynamic(const cube &Y,
                                const bool &compute_ll)
   :
   Y(Y),
-  N(N),
-  alpha_init(alpha_init),
-  beta_init(beta_init),
-  theta_init(theta_init),
+  S(S),
+  Nks(Nks),
+  alpha_old(alpha_old),
+  beta_old(beta_old),
+  theta_old(theta_old),
   unique_categories(unique_categories),
-  timemap(timemap),
+  uJ_J(uJ_J),
   timemap2(timemap2),
   item_timemap(item_timemap),
-  item_match(item_match),
+  IT(IT),
+  ITJ(ITJ),
   a0(a0),
   A0(A0),
   b0(b0),
@@ -41,20 +46,20 @@ poEMirtdynamic::poEMirtdynamic(const cube &Y,
   m0(m0),
   C0(C0),
   Delta(Delta),
+  alpha_fix(alpha_fix),
   constraint(constraint),
   std(std),
   maxit(maxit),
   verbose(verbose),
   tol(tol),
   compute_ll(compute_ll),
-  I(Y.n_rows),
-  J(Y.n_cols),
-  K(alpha_init.n_cols),
-  T(timemap.n_cols)
+  I(S.n_rows),
+  J(S.n_cols),
+  K(alpha_old.n_cols),
+  T(timemap2.n_cols)
 {
   Omega = cube(I, J, K);
   convmat = mat(maxit, 3);
-  log_likelihood = vec(maxit);
   check = false;
   iter = 0;
   converge = true;
@@ -66,23 +71,40 @@ poEMirtdynamic::~poEMirtdynamic()
   
 }
 
-void poEMirtdynamic::get_EOmega()
+void poEMirtdynamic::calc_ll()
 {
-  if (compute_ll) {
-    ll = 0.0;
-  }
+  ll = 0.0;
   for (int i = 0; i < I; i++) {
     for (int j = 0; j < J; j++) {
       if (theta_old(i, item_timemap[j]) != 0) {
-        vec unq = unique_categories[j]-1; 
-        for (int k = 0; k < (unq.size() - 1); k++) {
+        vec unq = unique_categories[j]; 
+        for (unsigned int k = 0; k < (unq.size() - 1); k++) {
+          if (!NumericVector::is_na(Y(i, j, unq[k]))) {
+            double psi = alpha_old(j, unq[k]) + beta_old(j, unq[k]) * theta_old(i, item_timemap[j]);
+            if (Nks(i, j, unq[k]) > 0) {
+              ll += S(i, j, unq[k]) * psi - Omega(i, j, unq[k]) * std::pow(psi, 2.0) / 2.0;
+            } else {
+              break;
+            }
+          }
+        } 
+      }
+    }
+  }
+  log_likelihood.push_back(ll);
+}
+
+void poEMirtdynamic::get_EOmega()
+{
+  for (int i = 0; i < I; i++) {
+    for (int j = 0; j < J; j++) {
+      if (theta_old(i, item_timemap[j]) != 0) {
+        vec unq = unique_categories[j]; 
+        for (unsigned int k = 0; k < (unq.size() - 1); k++) {
           if (!NumericVector::is_na(Y(i, j, unq[k]))) {
             double psi = alpha_old(j, unq[k]) + beta_old(j, unq[k]) * theta_old(i, item_timemap[j]);
             if (Nks(i, j, unq[k]) > 0) {
               Omega(i, j, unq[k]) = (Nks(i, j, unq[k]) / (2 * psi)) * std::tanh(psi / 2);
-              if (compute_ll) {
-                ll += S(i, j, unq[k]) * psi - Omega(i, j, unq[k]) * std::pow(psi, 2.0) / 2.0;
-              }
             } else {
               break;
             }
@@ -102,19 +124,19 @@ mat poEMirtdynamic::update_theta()
     vec B(T);
     
     //find attending session
-    uvec times_i = time_list[i];
+    uvec times_i = IT[i];
     int T_i = times_i.size();
     
-    for (int t = 0; t < T_i; t++) {
+    for (unsigned int t = 0; t < T_i; t++) {
       int t_i = times_i[t];
       double sig_part = 0;
       double mu_part = 0;
       if (timemap2(i, t_i) == 1) {
-        uvec item_index_t = ind_item_time_list[i][t];
+        uvec item_index_t = ITJ[i][t];
         for (int j = 0; j < item_index_t.size(); j++) {
           int jt = item_index_t[j];
-          vec unq = unique_categories[jt]-1;
-          for (int k = 0; k < (unq.size() - 1); k++) {
+          vec unq = unique_categories[jt];
+          for (unsigned int k = 0; k < (unq.size() - 1); k++) {
             if (!NumericVector::is_na(Y(i, jt, unq[k]))) {
               if (Nks(i, jt, unq[k]) > 0) {
                 sig_part += Omega(i, jt, unq[k]) * std::pow(beta_old(jt, unq[k]), 2.0);
@@ -157,27 +179,33 @@ mat poEMirtdynamic::update_theta()
     draw.row(i) = X_store.t();
   }
   
-  for (int t = 0; t < T; t++) {
+  for (unsigned int t = 0; t < T; t++) {
     if (draw(constraint[t], t) < 0) {
       draw.col(t) = -draw.col(t);
     }
-    if (std) {
-      vec draw_t = draw.col(t);
-      draw.col(t) = (draw_t - mean(draw_t.elem(find(draw_t != 0)))) / stddev(draw_t.elem(find(draw_t != 0)));
-      draw_t.elem(find(draw_t != 0)).ones();
-      draw.col(t) = draw.col(t) % draw_t;
-    }
+    // if (std) {
+    //   vec draw_t = draw.col(t);
+    //   draw.col(t) = (draw_t - mean(draw_t.elem(find(draw_t != 0)))) / stddev(draw_t.elem(find(draw_t != 0)));
+    //   draw_t.elem(find(draw_t != 0)).ones();
+    //   draw.col(t) = draw.col(t) % draw_t;
+    // }
+  }
+  if (std) {
+    mat tmp = draw;
+    tmp.elem(find(tmp != 0)).ones();
+    double m = mean(draw.elem(find(draw != 0)));
+    double sd = stddev(draw.elem(find(draw != 0)));
+    draw = ((draw - m) / sd) % tmp;
   }
   return draw;
 }
-
 
 mat poEMirtdynamic::update_beta()
 {
   mat draw(J, K);
   for (int j = 0; j < J; j++) {
-    vec unq = unique_categories[j] - 1;
-    for (int k = 0; k < (unq.size() - 1); k++) {
+    vec unq = unique_categories[j];
+    for (unsigned int k = 0; k < (unq.size() - 1); k++) {
       double sig_part = 0;
       double mu_part = 0;
       for (int i = 0; i < I; i++) {
@@ -190,7 +218,7 @@ mat poEMirtdynamic::update_beta()
       }
       sig_part += 1 / B0(j, unq[k]);
       mu_part += b0(j, unq[k]) / B0(j, unq[k]);
-      draw(j, unq[k]) = (1 / sig_part) * mu_part;
+      draw(j, unq[k]) = mu_part / sig_part;
     }
   }
   return draw;
@@ -199,35 +227,54 @@ mat poEMirtdynamic::update_beta()
 mat poEMirtdynamic::update_alpha() 
 {
   mat draw(J, K);
-  bool flag;
   for (int j = 0; j < J; j++) {
-    vec unq = unique_categories[j] - 1;
-    for (int k = 0; k < (unq.size() - 1); k++) {
+    vec unq = unique_categories[j];
+    for (unsigned int k = 0; k < (unq.size() - 1); k++) {
       double sig_part = 0;
       double mu_part = 0;
-      if (!NumericVector::is_na(item_match[j])) {
-        if (draw(item_match[j], unq[k]) != 0) {
-          draw(j, unq[k]) = draw(item_match[j], unq[k]);
-          flag = false;
-        } else {
-          flag = true;
-        }
-      } else {
-        flag = true;
+      for (int i = 0; i < I; i++) {
+        if (!NumericVector::is_na(Y(i, j, unq[k]))) {
+          if (Nks(i, j, unq[k]) > 0) {
+            sig_part += Omega(i, j, unq[k]);
+            mu_part += S(i, j, unq[k]) - beta(j, unq[k]) * Omega(i, j, unq[k]) * theta(i, item_timemap[j]);
+          }
+        }  
       }
-      if (flag) {
-        for (int i = 0; i < I; i++) {
+      sig_part += 1 / A0(j, unq[k]);
+      mu_part += a0(j, unq[k]) / A0(j, unq[k]);
+      draw(j, unq[k]) = mu_part / sig_part;
+    }
+  }
+  return draw;
+}
+
+mat poEMirtdynamic::update_alpha_fixed()
+{
+  mat draw(J, K);
+  for (unsigned int uj = 0; uj < uJ_J.size(); uj++) {
+    rowvec sig(K);
+    rowvec mu(K);
+    vec Juj = uJ_J[uj];
+    for (unsigned int jj = 0; jj < Juj.size(); jj++) {
+      int j = Juj[jj];
+      vec unq = unique_categories[j];
+      for (unsigned int k = 0; k < (unq.size()-1); k++) {
+        for (unsigned int i = 0; i < I; i++) {
           if (!NumericVector::is_na(Y(i, j, unq[k]))) {
             if (Nks(i, j, unq[k]) > 0) {
-              sig_part += Omega(i, j, unq[k]);
-              mu_part += S(i, j, unq[k]) - beta(j, unq[k]) * Omega(i, j, unq[k]) * theta(i, item_timemap[j]);
+              sig[unq[k]] += Omega(i, j, unq[k]);
+              mu[unq[k]] += S(i, j, unq[k]) - Omega(i, j, unq[k]) * (theta(i, item_timemap[j]) * beta(j, unq[k]));
             }
-          }  
+          }
         }
-        sig_part += 1 / A0(j, unq[k]);
-        mu_part += a0(j, unq[k]) / A0(j, unq[k]);
-        draw(j, unq[k]) = (1 / sig_part) * mu_part;
+        sig[unq[k]] += 1.0 / A0(j, unq[k]);
+        mu[unq[k]] += a0(j, unq[k]) / A0(j, unq[k]); 
       }
+    }
+    sig.elem(find(sig == 0)).ones();
+    for (unsigned int jj = 0; jj < Juj.size(); jj++) {
+      int j = Juj[jj];
+      draw.row(j) = mu / sig;
     }
   }
   return draw;
@@ -241,57 +288,37 @@ void poEMirtdynamic::convcheck(int g)
   vec tmp_beta2 = beta.elem(find(beta != 0));
   vec tmp_theta1 = theta_old.elem(find(theta_old != 0));
   vec tmp_theta2 = theta.elem(find(theta != 0));
-  convmat(g-1, 0) = cor(tmp_alpha1, tmp_alpha2).min();
-  convmat(g-1, 1) = cor(tmp_beta1, tmp_beta2).min();
-  convmat(g-1, 2) = cor(tmp_theta1, tmp_theta2).min();
-  
-  check = ((1 - convmat.row(g-1).min()) < tol);
+  convmat(g, 0) = cor(tmp_alpha1, tmp_alpha2).min();
+  convmat(g, 1) = cor(tmp_beta1, tmp_beta2).min();
+  convmat(g, 2) = cor(tmp_theta1, tmp_theta2).min();
+  check = ((1 - convmat.row(g).min()) < tol);
 }
 
 // EM
 void poEMirtdynamic::fit() 
 {
-  // Initial values
-  alpha_old = alpha_init;
-  beta_old = beta_init;
-  theta_old = theta_init;
-  
-  // Auxiliary components for dynamic estimation
-  List time_info = get_time_info(N, item_timemap, timemap);
-  time_list = as<std::vector<uvec>>(wrap(time_info["time_list"]));
-  ind_item_time_list = as<std::vector<std::vector<uvec>>>(wrap(time_info["ind_item_time_list"]));
-  
-  // Aux 2
-  List tmp = construct_sb_auxs(Y, N, unique_categories);
-  Nks = as<cube>(wrap(tmp["Nks"]));
-  S = as<cube>(wrap(tmp["S"]));
-  
   for (int g = 0; g < maxit; g++) {
     checkUserInterrupt();
     
     // Estep
     get_EOmega();
-    if (g != 0) {
-      if (compute_ll) {
-        log_likelihood[g-1] = ll;
-      }
-    }
     
     // Mstep
     theta = update_theta();
     beta = update_beta();
-    alpha = update_alpha();
+    if (alpha_fix) {
+      alpha = update_alpha_fixed();
+    } else {
+      alpha = update_alpha();
+    }
     
     if (g != 0) {
       convcheck(g);
+      if (compute_ll) {
+        calc_ll();
+      }
       if (check) {
-        uvec seqq = as<uvec>(wrap(seq(0, g-1)));
-        convmat = convmat.rows(seqq);
-        if (compute_ll) {
-          get_EOmega();
-          log_likelihood[g] = ll;
-        }
-        log_likelihood = log_likelihood.rows(0, g);
+        convmat = convmat.rows(0, g);
         iter = g;
         break;
       } else if (g == (maxit - 1)) {
@@ -299,7 +326,7 @@ void poEMirtdynamic::fit()
         iter = maxit;
         break;
       } else if (g % verbose == 0) {
-        Rcout << "Iteration " << g << ": eval = " << (1 - convmat.row(g-1).min()) << '\n';
+        Rcout << "Iteration " << g << ": eval = " << (1 - convmat.row(g).min()) << '\n';
       }
     }
     
@@ -326,15 +353,17 @@ List poEMirtdynamic::output()
 
 //[[Rcpp::export]]
 List poEMirtdynamic_fit(const arma::cube &Y,
-                        const arma::mat &N,
-                        const arma::mat &alpha_init,
-                        const arma::mat &beta_init,
-                        const arma::mat &theta_init,
+                        const arma::cube &S,
+                        const arma::cube &Nks,
+                        arma::mat alpha_old,
+                        arma::mat beta_old,
+                        arma::mat theta_old,
                         const std::vector<arma::vec> &unique_categories,
-                        const arma::mat &timemap,
+                        const std::vector<arma::vec> &uJ_J,
                         const arma::mat &timemap2,
                         const arma::vec &item_timemap,
-                        const arma::vec &item_match,
+                        const std::vector<arma::uvec> &IT,
+                        const std::vector<std::vector<arma::uvec>> &ITJ,
                         const arma::mat &a0,
                         const arma::mat &A0,
                         const arma::mat &b0,
@@ -343,6 +372,7 @@ List poEMirtdynamic_fit(const arma::cube &Y,
                         const arma::vec &C0,
                         const arma::vec &Delta,
                         const arma::vec &constraint,
+                        const bool &alpha_fix,
                         const bool &std,
                         const int &maxit,
                         const int &verbose,
@@ -351,15 +381,17 @@ List poEMirtdynamic_fit(const arma::cube &Y,
 {
   // Instance
   poEMirtdynamic Model(Y,
-                       N,
-                       alpha_init,
-                       beta_init,
-                       theta_init,
+                       S,
+                       Nks,
+                       alpha_old,
+                       beta_old,
+                       theta_old,
                        unique_categories,
-                       timemap,
+                       uJ_J,
                        timemap2,
                        item_timemap,
-                       item_match,
+                       IT,
+                       ITJ,
                        a0,
                        A0,
                        b0,
@@ -368,6 +400,7 @@ List poEMirtdynamic_fit(const arma::cube &Y,
                        C0,
                        Delta,
                        constraint,
+                       alpha_fix,
                        std,
                        maxit,
                        verbose,

@@ -1,18 +1,25 @@
 #' @title Preparing for \code{poEMirt()}
 #' @description This function creates an input data for \code{poEMirt} models.
 #' 
-#' @param data A data.frame or tbl_df object.
-#' @param responses Names of columns of responses. Last response category will be the baseline.
-#' @param i A name of individual IDs column.
-#' @param j A name of item IDs column.
-#' @param t A name of time period IDs column (for `dynamic` model).
-#' @param no_smooth A boot. If TRUE, the model does not estimate latent traits of i in missing years (for `dynamic` model). Default is FALSE.
-#' @param matched_j A name of column that contains item IDs of matched item.
+#' @param dataframe A data.frame or tbl_df object.
+#' @param responses Names of columns of responses. Last response category for each j will be the baseline.
+#' @param i A name of individual IDs column. Must be an integer column.
+#' @param j A name of item IDs column. Must be an integer column.
+#' @param t A name of time period IDs column (for `dynamic` model). Must be an integer column.
+#' @param smooth A character, the smoothing method. 
+#' \itemize{
+#'   \item \code{"no"} No smoothing.
+#'   \item \code{"default"} Using from the start time of i to T.
+#'   \item \code{"finite"} Using from the start time of it to the end time.
+#'  }
+#' 
 #' @return A \code{poEMirtData} object.
 #' 
-#' @importFrom rlang sym !! enquo .data
-#' @importFrom dplyr %>% distinct select filter right_join left_join arrange mutate across everything all_of group_by summarise_at mutate_at row_number
+#' @importFrom rlang sym !! enquo .data :=
+#' @importFrom dplyr %>% distinct select filter right_join left_join arrange mutate across everything all_of group_by summarize summarize_at mutate_at row_number
 #' @importFrom tidyr expand_grid spread 
+#' @importFrom stringr str_c str_split
+#' @importFrom Rcpp sourceCpp
 #' @export
 #' 
 #' @examples 
@@ -21,7 +28,7 @@
 #' 
 #' # Convert into poEMirt-readable data
 #' data <- read_poEMirt(
-#'   data = sim_data_dynamic,
+#'   dataframe = sim_data_dynamic,
 #'   responses = paste0('y', 1:5),
 #'   i = "i",
 #'   j = "j",
@@ -29,32 +36,71 @@
 #' )
 #' }
 
-read_poEMirt <- function(data, 
+read_poEMirt <- function(dataframe, 
                          responses, 
                          i, 
                          j, 
                          t = NULL, 
-                         no_smooth = FALSE, 
-                         matched_j = NULL) {
+                         smooth = NULL) {
   # Input check
-  if (!class(data)[1] %in% c("tbl_df", "data.frame")) stop("`data` should be a data.frame or tbl_df.")
+  if (!class(dataframe)[1] %in% c("tbl_df", "data.frame")) stop("`dataframe` should be a data.frame or tbl_df.")
+  if (is.null(smooth)) smooth <- "default"
+  smooth <- match.arg(smooth, choices = c("no", "default", "finite"))
+  if (length(smooth) > 1) stop("`smooth` must be one of 'no', 'default', or 'finite'.")
   
   # Size
   i <- rlang::sym(i)
   j <- rlang::sym(j)
   responses <- rlang::enquo(responses)
+  if (!is.null(t)) {
+    t <- rlang::sym(t)
+    # Check whether j is repeated id or not
+    tmp <- dataframe %>% 
+      dplyr::distinct(!!j, !!t) %>% 
+      dplyr::group_by(!!j) %>% 
+      dplyr::summarize(count = dplyr::n())
+    if (sum(tmp$count) > nrow(tmp)) {
+      repeated_j <- TRUE
+      cat("* Detecting repeated j", paste0("[", nrow(tmp[tmp$count >= 2, ]), " / ", nrow(tmp), "]"), ":\n")
+      cat("  - Set `alpha_fix = TRUE` in `poEMirt()` to fix alpha of same repeated items.\n")
+      
+      # Create unique item ids
+      j_val <- tmp %>% 
+        nrow()
+      j_val <- 10^nchar(j_val)
+      t_val <- dataframe %>% 
+        dplyr::distinct(!!t) %>% 
+        nrow()
+      t_val <- 10^nchar(t_val)
+      dataframe <- dataframe %>% 
+        dplyr::mutate(
+          unique_j = stringr::str_c(t_val + !!t, "-", j_val + !!j)
+        )
+      
+      # Identifying repeated j
+      rep_j <- dataframe %>% 
+        dplyr::distinct(.data$unique_j, !!j) %>% 
+        dplyr::arrange(.data$unique_j) 
+    
+      # Replace j with unqiue_j
+      dataframe <- dataframe %>% 
+        dplyr::mutate(!!j := .data$unique_j)
+    } else {
+      repeated_j <- FALSE
+    }
+  }
   
   # Exclude some items
-  excl <- data %>% 
+  excl <- dataframe %>% 
     dplyr::group_by(!!j) %>% 
-    dplyr::summarise_at(
+    dplyr::summarize_at(
       .vars = dplyr::vars(dplyr::all_of(!!responses)),
       .funs = function(x) sum(x, na.rm = TRUE)
     ) 
   jname <- as.vector(as.matrix(excl[, 1]))
-  excl <- excl |> 
+  excl <- excl %>% 
     dplyr::select(-!!j)
-  excl <- excl |> 
+  excl <- excl %>% 
     dplyr::mutate(
       all = rowSums(excl)
     ) 
@@ -64,7 +110,7 @@ read_poEMirt <- function(data,
       .funs = function(x) x == excl$all
     ) %>% 
     dplyr::select(-"all") 
-  excl <- excl |> 
+  excl <- excl %>% 
     dplyr::mutate(
       exc = rowSums(excl)
     ) %>% 
@@ -75,52 +121,49 @@ read_poEMirt <- function(data,
   if (nrow(excl) > 0) {
     cat("* Remove following items due to no variation in responses\n")
     cat("  -", excl$j, "\n")
-    data <- data %>% 
+    dataframe <- dataframe %>% 
       dplyr::filter(
         !eval(j) %in% excl$j
       )
+    if (repeated_j) {
+      rep_j <- rep_j %>% 
+        dplyr::filter(
+          !eval(j) %in% excl$j
+        )
+    }
   }
   
   if (!is.null(t)) {
     # Dynamic 
-    t <- rlang::sym(t)
-    
-    if (!is.null(matched_j)) {
-      matched_j <- rlang::sym(matched_j)
-      data <- data %>% 
-        dplyr::select(i = !!i, j = !!j, mj = !!matched_j, t = !!t, dplyr::all_of(!!responses))
-    } else {
-      data <- data %>% 
-        dplyr::select(i = !!i, j = !!j, t = !!t, dplyr::all_of(!!responses))
-    }
-    
-    T <- data %>% 
+    dataframe <- dataframe %>% 
+      dplyr::select(i = !!i, j = !!j, t = !!t, dplyr::all_of(!!responses))
+    T <- dataframe %>% 
       dplyr::distinct(t) %>% 
       nrow()
-    item_timemap <- data %>% 
+    item_timemap <- dataframe %>% 
       dplyr::distinct(j, t) %>% 
       dplyr::arrange(j)
   } else {
-    data <- data %>% 
+    dataframe <- dataframe %>% 
       dplyr::select(i = !!i, j = !!j, dplyr::all_of(!!responses))
   }
-  I <- data %>% 
+  I <- dataframe %>% 
     dplyr::distinct(i) %>% 
     nrow()
-  J <- data %>% 
+  J <- dataframe %>% 
     dplyr::distinct(j) %>% 
     nrow()
-  maxK <- data %>% 
+  maxK <- dataframe %>% 
     dplyr::select(dplyr::all_of(!!responses)) %>% 
     ncol()
   
   # Response array
   Y <- array(NA, dim = c(I, J, maxK))
-  Ks <- data %>% 
+  Ks <- dataframe %>% 
     dplyr::select(dplyr::all_of(!!responses)) %>% 
     colnames()
   for (kk in 1:length(Ks)) {
-    tmp <- data %>% 
+    tmp <- dataframe %>% 
       dplyr::select(i, j, y = dplyr::all_of(Ks[kk])) %>% 
       tidyr::spread(key = j, value = .data$y) %>%
       arrange(i)
@@ -128,20 +171,45 @@ read_poEMirt <- function(data,
       as.matrix() 
   }
   
-  rownames(Y) <- sort(unique(data$i))
-  colnames(Y) <- sort(unique(data$j))
+  rownames(Y) <- sort(unique(dataframe$i))
+  coln <- sort(unique(dataframe$j))
+  if (repeated_j) {
+    tmp1 <- stringr::str_split(coln, "-")
+    tt <- lapply(
+      tmp1,
+      function(x) {
+        as.integer(x[1]) - t_val
+      }
+    ) %>% 
+      unlist()
+    jj <- lapply(
+      tmp1,
+      function(x) {
+        as.integer(x[2]) - j_val
+      }
+    ) %>% 
+      unlist()
+    coln <- paste0(tt, "-", jj)
+  }
+  colnames(Y) <- coln
   dimnames(Y)[[3]] <- Ks
   
   # Categories
-  categories <- apply(colSums(Y, na.rm = TRUE), 1, function(x) which(x != 0), simplify = FALSE)
+  categories <- apply(colSums(Y, na.rm = TRUE), 1, function(x) which(x != 0)-1, simplify = FALSE)
   
   # Number of trials
   n <- apply(Y, c(1, 2), sum, na.rm = TRUE)
   
+  # Get data information
+  sb <- construct_sb_auxs(Y, n, categories)
+  
   # Create an output list
   L <- list(
-    response = Y, 
-    trial = n, 
+    data = list(
+      response = Y,
+      trial = n, 
+      modelinput = sb
+    ),
     size = list(
       I = I,
       J = J,
@@ -151,8 +219,28 @@ read_poEMirt <- function(data,
   )
   
   if (!is.null(t)) {
+    # Repeated j
+    if (repeated_j) {
+      rep_j_mat <- rep_j %>% 
+        dplyr::mutate(dum = 1) %>% 
+        tidyr::spread(
+          key = .data$unique_j,
+          value = .data$dum
+        )
+      rep_j_mat <- as.matrix(rep_j_mat[, -1])
+      rep_j_mat[is.na(rep_j_mat)] <- 0
+      prc <- apply(rep_j_mat, 1, function(x) which(x == 1) - 1, simplify = FALSE)
+      
+      # Get index
+      L$rep <- list(
+        processed = prc,
+        raw = rep_j_mat,
+        flag = repeated_j
+      )
+    }
+    
     # Time-map
-    tmp <- data %>% 
+    tmp <- dataframe %>% 
       dplyr::distinct(i, t) %>% 
       dplyr::arrange(i) %>% 
       dplyr::mutate(dum = 1) %>% 
@@ -167,37 +255,37 @@ read_poEMirt <- function(data,
       as.matrix()
     rownames(timemap) <- rownames(Y)
     timemap2 <- timemap
-    if (!no_smooth) {
+    if (smooth == "default") {
       for (ii in 1:I) {
         Ti_start <- names(which.min(which(timemap[ii, ] == 1)))
         timemap[ii, Ti_start:T] <- 1
       }
+    } else if (smooth == "finite") {
+      for (ii in 1:I) {
+        Ti_start <- names(which.min(which(timemap[ii, ] == 1)))
+        Ti_end <- names(which.max(which(timemap[ii, ] == 1)))
+        timemap[ii, Ti_start:Ti_end] <- 1
+      }
     }
     
     # Item time-map
-    item_timemap <- item_timemap$t
+    item_timemap <- item_timemap$t - 1
     names(item_timemap) <- colnames(Y)
     
-    # Matched items
-    if (!is.null(matched_j)) {
-      item_match <- data %>% 
-        dplyr::distinct(j, .data$mj) %>% 
-        dplyr::arrange(j) 
-      item_match <- item_match$j
-    } else {
-      item_match <- rep(NA, J)
-    }
-    
     L$size$T <- T
+    
+    index <- get_dynamic_info(n, item_timemap, timemap)
+    
     L$dynamic <- list(
       timemap = timemap,
       timemap2 = timemap2,
       item_timemap = item_timemap,
-      item_match = item_match,
-      no_smooth = no_smooth
+      smooth = smooth,
+      index = index
     )
   }
   
   class(L) <- c("poEMirtData", class(L))
+  
   return(L)
 }

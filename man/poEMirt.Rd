@@ -8,6 +8,8 @@ poEMirt(
   data,
   model = c("static", "dynamic"),
   constraint = NULL,
+  alpha_fix = FALSE,
+  theta_std = FALSE,
   init = NULL,
   priors = NULL,
   control = NULL
@@ -19,6 +21,10 @@ poEMirt(
 \item{model}{A string, one of "static" or "dynamic".}
 
 \item{constraint}{An integer scalar or vector (for dynamic model, the same length as the number of times), index of an individual i (the location of i) whose latent trait is always set positive.}
+
+\item{alpha_fix}{A bool, whether fixes alpha of same repeated items or not. Default is FALSE.}
+
+\item{theta_std}{A bool, whether standardizes theta or not. Default is FALSE}
 
 \item{init}{A list, containing initial values (optional).
 \itemize{
@@ -40,7 +46,6 @@ poEMirt(
 
 \item{control}{A list of model controls.
 \itemize{
-  \item \code{std} A bool, whether latent traits are standardized or not. Default is FALSE.  
   \item \code{compute_ll} A bool, whether compute log-likelihood for each iteration or not. Default is FALSE.
   \item \code{maxit} An integer, maximum number of iterations for EM. Default is 500.
   \item \code{tol} A double (< 1), convergence threshold. Default is 1e-6.

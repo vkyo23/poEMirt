@@ -8,7 +8,14 @@ summary.poEMirtData <- function(object, ...) {
   cat("----- poEMirtData summary -----\n")
   cat("* Data size:\n")
   cat("  - I = ", object$size$I, "\n")
-  cat("  - J = ", object$size$J, "\n")
+  cat("  - J = ", object$size$J)
+  if (exists("rep", object)) {
+    al <- lapply(object$rep$processed, length) %>%
+      unlist()
+    cat(": Repeated j", paste0("[", sum(al > 1), " / ", length(al), "]"), "\n")
+  } else {
+    cat("\n")
+  }
   if (exists("T", object$size)) {
     cat("  - T = ", object$size$T, "\n")
   }
@@ -18,7 +25,7 @@ summary.poEMirtData <- function(object, ...) {
   ) %>%
     unlist() %>%
     min()
-  cat("  - min(Kj) = ", mi, "\n")
+  cat("  - min(Kj) = ", mi + 1, "\n")
   cat("  - max(Kj) = ", object$size$maxK, "\n")
   me <- lapply(
     object$categories,
@@ -28,7 +35,7 @@ summary.poEMirtData <- function(object, ...) {
     mean()
   cat("  - mean(Kj) =", round(me, 2), "\n")
   cat("* NA rate:", 
-      paste0(round(sum(object$trial == 0) / length(object$trial), 3) * 100, "%"), "\n")
+      paste0(round(sum(object$data$trial == 0) / length(object$data$trial), 3) * 100, "%"), "\n")
 }
 
 #' @title Summary function for \code{poEMirtFit}
@@ -38,7 +45,7 @@ summary.poEMirtData <- function(object, ...) {
 #' @param ... Other arguments to \code{summary()}.
 #' @returns A tibble dataframe.
 #' @importFrom dplyr %>% mutate select as_tibble bind_rows row_number
-#' @importFrom stringr str_c
+#' @importFrom stringr str_c str_replace
 #' @importFrom tidyr pivot_longer drop_na
 #' @importFrom rlang .data
 #' @export
@@ -47,7 +54,7 @@ summary.poEMirtFit <- function(object,
                                ...) {
   out <- rep()
   parameter <- match.arg(parameter, choices = c("alpha", "beta", "theta"), several.ok = TRUE)
-  message("* Summarizing following parameters: ", paste(parameter, collapse = ", "), ".")
+  cat("* Summarizing following parameters:", paste(parameter, collapse = ", "), "\n")
   if (any(parameter == "alpha")) {
     tmp <- object$parameter$alpha %>% 
       dplyr::as_tibble(.name_repair = "unique") %>% 
@@ -64,6 +71,13 @@ summary.poEMirtFit <- function(object,
         parameter = "alpha"
       ) %>% 
       dplyr::select("parameter", "index", "reference", "estimate" = "alpha") 
+    if (exists("rep", object$info$data)) {
+      tmp <- tmp %>%
+        dplyr::mutate(
+          index = stringr::str_replace(.data$index, "-", ","),
+          reference = "[t,j,k]"
+        )
+    }
     out <- dplyr::bind_rows(out, tmp)
   }
   if (any(parameter == "beta")) {
@@ -82,6 +96,13 @@ summary.poEMirtFit <- function(object,
         parameter = "beta"
       ) %>% 
       dplyr::select("parameter", "index", "reference", "estimate" = "beta") 
+    if (exists("rep", object$info$data)) {
+      tmp <- tmp %>%
+        dplyr::mutate(
+          index = stringr::str_replace(.data$index, "-", ","),
+          reference = "[t,j,k]"
+        )
+    }
     out <- dplyr::bind_rows(out, tmp)
   }
   if (any(parameter == "theta")) {
@@ -138,7 +159,7 @@ summary.poEMirtBoot <- function(object,
                                 ...) {
   parameter <- match.arg(parameter, choices = c("alpha", "beta", "theta"), several.ok = TRUE)
   cis <- c((1 - ci)/2, 1 - (1 - ci)/2)
-  message("* Summarizing following parameters: ", paste(parameter, collapse = ", "), ".")
+  cat("* Summarizing following parameters: ", paste(parameter, collapse = ", "), "\n")
   out <- rep()
   if (any(parameter == "alpha")) {
     if (!is.null(object$parameter$alpha)) {
@@ -176,9 +197,16 @@ summary.poEMirtBoot <- function(object,
           ci_lwr = .data$estimate + sd * stats::qnorm(cis[1]),
           ci_upr = .data$estimate + sd * stats::qnorm(cis[2])
         ) 
+      if (exists("rep", object$input$fit$info$data)) {
+        tmp <- tmp %>%
+          dplyr::mutate(
+            index = stringr::str_replace(.data$index, "-", ","),
+            reference = "[t,j,k]"
+          )
+      }
       out <- dplyr::bind_rows(out, tmp)
     } else {
-      message("   - WARNING: You did not save `alpha` in your `poEMirtBoot` object. Set `control$save_item_parameters = TRUE` in `poEMirt_uncertainty` to obtain `alpha`.")
+      warning("You did not save `alpha` in your `poEMirtBoot` object.\n Set `control$save_item_parameters = TRUE` in `poEMirt_uncertainty` to obtain `alpha`.")
     }
   }
   if (any(parameter == "beta")) {
@@ -217,9 +245,16 @@ summary.poEMirtBoot <- function(object,
           ci_lwr = .data$estimate + sd * qnorm(cis[1]),
           ci_upr = .data$estimate + sd * qnorm(cis[2])
         ) 
+      if (exists("rep", object$input$fit$info$data)) {
+        tmp <- tmp %>%
+          dplyr::mutate(
+            index = stringr::str_replace(.data$index, "-", ","),
+            reference = "[t,j,k]"
+          )
+      }
       out <- dplyr::bind_rows(out, tmp)
     } else {
-      message("   - WARNING: You did not save `beta` in your `poEMirtBoot` object. Set `control$save_item_parameters = TRUE` in `poEMirt_uncertainty` to obtain `beta`.")
+      warning("You did not save `beta` in your `poEMirtBoot` object.\n Set `control$save_item_parameters = TRUE` in `poEMirt_uncertainty` to obtain `beta`")
     }
   }
   if (any(parameter == "theta")) {
@@ -291,7 +326,7 @@ summary.poEMirtBoot <- function(object,
 #' @param ... Other arguments to \code{summary()}.
 #' @returns A tibble dataframe.
 #' @importFrom dplyr %>% mutate select as_tibble bind_rows row_number bind_cols
-#' @importFrom stringr str_c
+#' @importFrom stringr str_c str_replace
 #' @importFrom tidyr pivot_longer drop_na
 #' @importFrom stats quantile median
 #' @importFrom posterior rhat
@@ -303,7 +338,7 @@ summary.poEMirtGibbs <- function(object,
                                  ...) {
   parameter <- match.arg(parameter, choices = c("alpha", "beta", "theta"), several.ok = TRUE)
   cis <- c((1 - ci)/2, 1 - (1 - ci)/2)
-  message("* Summarizing following parameters: ", paste(parameter, collapse = ", "), ".")
+  cat("* Summarizing following parameters:", paste(parameter, collapse = ", "), "\n")
   out <- rep()
   if (any(parameter == "alpha")) {
     if (length(object$parameter$alpha) != 0) {
@@ -383,9 +418,16 @@ summary.poEMirtGibbs <- function(object,
         tidyr::drop_na() %>% 
         dplyr::select("rhat")
       tmp <- dplyr::bind_cols(est_mean, est_median, sds, lwr, upr, rhats)  
+      if (exists("rep", object$input$fit$info$data)) {
+        tmp <- tmp %>%
+          dplyr::mutate(
+            index = stringr::str_replace(.data$index, "-", ","),
+            reference = "[t,j,k]"
+          )
+      }
       out <- dplyr::bind_rows(out, tmp)
     } else {
-      message("   - WARNING: You did not save `alpha` in your `poEMirtGibbs` object. Set `control$save_item_parameters = TRUE` in `poEMirt_uncertainty` to obtain `alpha`.")
+      warning("You did not save `alpha` in your `poEMirtGibbs` object.\n Set `control$save_item_parameters = TRUE` in `poEMirt_uncertainty` to obtain `alpha`.")
     }
   }
   if (any(parameter == "beta")) {
@@ -466,9 +508,16 @@ summary.poEMirtGibbs <- function(object,
         tidyr::drop_na() %>% 
         dplyr::select("rhat")
       tmp <- dplyr::bind_cols(est_mean, est_median, sds, lwr, upr, rhats) 
+      if (exists("rep", object$input$fit$info$data)) {
+        tmp <- tmp %>%
+          dplyr::mutate(
+            index = stringr::str_replace(.data$index, "-", ","),
+            reference = "[t,j,k]"
+          )
+      }
       out <- dplyr::bind_rows(out, tmp)
     } else {
-      message("   - WARNING: You did not save `beta` in your `poEMirtGibbs` object. Set `control$save_item_parameters = TRUE` in `poEMirt_uncertainty` to obtain `beta`.")
+      warning("You did not save `beta` in your `poEMirtGibbs` object.\n Set `control$save_item_parameters = TRUE` in `poEMirt_uncertainty` to obtain `beta`.")
     }
   }
   if (any(parameter == "theta")) {
