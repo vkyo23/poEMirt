@@ -19,7 +19,7 @@ List construct_sb_auxs(const arma::cube &Y,
     for (int j = 0; j < J; j++) {
       vec unq = unique_categories[j];
       double Ycum = 0;
-      for (int k = 0; k < (unq.size() - 1); k++) {
+      for (unsigned int k = 0; k < (unq.size() - 1); k++) {
         if (!NumericVector::is_na(Y(i, j, unq[k]))) {
           Nks(i, j, unq[k]) = N(i, j) - Ycum;
           Ycum += Y(i, j, unq[k]);
@@ -105,7 +105,7 @@ cube calc_predY(const mat &N,
         double stick = 1.0;
         vec unq = unique_categories[j];
         vec pi_(unq.size());
-        for (int k = 0; k < (unq.size()-1); k++) {
+        for (unsigned int k = 0; k < (unq.size()-1); k++) {
           double psi = alpha(j, unq[k]) + beta(j, unq[k]) * theta[i];
           pi_[k] = (std::exp(psi) / (1 + std::exp(psi))) * stick;
           stick -= pi_[k];
@@ -113,7 +113,7 @@ cube calc_predY(const mat &N,
         pi_[unq.size() - 1] = stick;
         int N_ij = N(i, j);
         vec tmp = rmultinom2(N_ij, pi_);
-        for (int k = 0; k < unq.size(); k++) {
+        for (unsigned int k = 0; k < unq.size(); k++) {
           predY(i, j, unq[k]) = tmp[k];
         }
       }
@@ -142,7 +142,7 @@ cube dyn_calc_predY(const mat &N,
           double stick = 1.0;
           vec unq = unique_categories[j];
           vec pi_(unq.size());
-          for (int k = 0; k < (unq.size()-1); k++) {
+          for (unsigned int k = 0; k < (unq.size()-1); k++) {
             double psi = alpha(j, unq[k]) + beta(j, unq[k]) * theta(i, t);
             pi_[k] = (std::exp(psi) / (1 + std::exp(psi))) * stick;
             stick -= pi_[k];
@@ -150,7 +150,7 @@ cube dyn_calc_predY(const mat &N,
           pi_[unq.size() - 1] = stick;
           int N_ij = N(i, j);
           vec tmp = rmultinom2(N_ij, pi_);
-          for (int k = 0; k < unq.size(); k++) {
+          for (unsigned int k = 0; k < unq.size(); k++) {
             predY(i, j, unq[k]) = tmp[k];
           }
         }
@@ -175,13 +175,13 @@ cube calc_probY(const mat &alpha,
       double stick = 1.0;
       vec unq = unique_categories[j];
       vec pi_(unq.size());
-      for (int k = 0; k < (unq.size()-1); k++) {
+      for (unsigned int k = 0; k < (unq.size()-1); k++) {
         double psi = alpha(j, unq[k]) + beta(j, unq[k]) * theta[i];
         pi_[k] = (std::exp(psi) / (1 + std::exp(psi))) * stick;
         stick -= pi_[k];
       }
       pi_[unq.size() - 1] = stick;
-      for (int k = 0; k < unq.size(); k++) {
+      for (unsigned int k = 0; k < unq.size(); k++) {
         probY(i, j, unq[k]) = pi_[k];
       }
     }
@@ -206,13 +206,13 @@ cube dyn_calc_probY(const mat &alpha,
         double stick = 1.0;
         vec unq = unique_categories[j];
         vec pi_(unq.size());
-        for (int k = 0; k < (unq.size()-1); k++) {
+        for (unsigned int k = 0; k < (unq.size()-1); k++) {
           double psi = alpha(j, unq[k]) + beta(j, unq[k]) * theta(i, t);
           pi_[k] = (std::exp(psi) / (1 + std::exp(psi))) * stick;
           stick -= pi_[k];
         }
         pi_[unq.size() - 1] = stick;
-        for (int k = 0; k < unq.size(); k++) {
+        for (unsigned int k = 0; k < unq.size(); k++) {
           probY(i, j, unq[k]) = pi_[k];
         }
       }

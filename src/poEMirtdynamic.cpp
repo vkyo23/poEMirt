@@ -127,13 +127,13 @@ mat poEMirtdynamic::update_theta()
     uvec times_i = IT[i];
     int T_i = times_i.size();
     
-    for (unsigned int t = 0; t < T_i; t++) {
+    for (int t = 0; t < T_i; t++) {
       int t_i = times_i[t];
       double sig_part = 0;
       double mu_part = 0;
       if (timemap2(i, t_i) == 1) {
         uvec item_index_t = ITJ[i][t];
-        for (int j = 0; j < item_index_t.size(); j++) {
+        for (unsigned int j = 0; j < item_index_t.size(); j++) {
           int jt = item_index_t[j];
           vec unq = unique_categories[jt];
           for (unsigned int k = 0; k < (unq.size() - 1); k++) {
@@ -179,7 +179,7 @@ mat poEMirtdynamic::update_theta()
     draw.row(i) = X_store.t();
   }
   
-  for (unsigned int t = 0; t < T; t++) {
+  for (int t = 0; t < T; t++) {
     if (draw(constraint[t], t) < 0) {
       draw.col(t) = -draw.col(t);
     }
@@ -259,7 +259,7 @@ mat poEMirtdynamic::update_alpha_fixed()
       int j = Juj[jj];
       vec unq = unique_categories[j];
       for (unsigned int k = 0; k < (unq.size()-1); k++) {
-        for (unsigned int i = 0; i < I; i++) {
+        for (int i = 0; i < I; i++) {
           if (!NumericVector::is_na(Y(i, j, unq[k]))) {
             if (Nks(i, j, unq[k]) > 0) {
               sig[unq[k]] += Omega(i, j, unq[k]);

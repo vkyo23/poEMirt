@@ -23,7 +23,8 @@ Imports:
 Suggests:
     MCMCpack,
     unvotes,
-    ggplot2
+    ggplot2,
+    testthat (>= 3.0.0)
 LinkingTo:
     Rcpp, 
     RcppArmadillo,
@@ -31,3 +32,4 @@ LinkingTo:
 RoxygenNote: 7.2.3
 LazyData: TRUE
 Encoding: UTF-8
+Config/testthat/edition: 3

@@ -78,7 +78,7 @@ void poEMirtdynamic_gibbs::draw_Omega()
     for (int j = 0; j < J; j++) {
       if (theta(i, item_timemap[j]) != 0) {
         vec unq = unique_categories[j];
-        for (int k = 0; k < (unq.size() - 1); k++) {
+        for (unsigned int k = 0; k < (unq.size() - 1); k++) {
           double psi = alpha(j, unq[k]) + beta(j, unq[k]) * theta(i, item_timemap[j]);
           if (!NumericVector::is_na(Y(i, j, unq[k]))) {
             if (Nks(i, j, unq[k]) > 0) {
@@ -242,7 +242,7 @@ void poEMirtdynamic_gibbs::draw_alpha_fixed()
       int j = Juj[jj];
       vec unq = unique_categories[j];
       for (unsigned int k = 0; k < (unq.size()-1); k++) {
-        for (unsigned int i = 0; i < I; i++) {
+        for (int i = 0; i < I; i++) {
           if (!NumericVector::is_na(Y(i, j, unq[k]))) {
             if (Nks(i, j, unq[k]) > 0) {
               sig[unq[k]] += Omega(i, j, unq[k]);

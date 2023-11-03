@@ -81,7 +81,7 @@ read_poEMirt <- function(dataframe,
       rep_j <- dataframe %>% 
         dplyr::distinct(.data$unique_j, !!j) %>% 
         dplyr::arrange(.data$unique_j) 
-    
+      
       # Replace j with unqiue_j
       dataframe <- dataframe %>% 
         dplyr::mutate(!!j := .data$unique_j)
@@ -125,11 +125,13 @@ read_poEMirt <- function(dataframe,
       dplyr::filter(
         !eval(j) %in% excl$j
       )
-    if (repeated_j) {
-      rep_j <- rep_j %>% 
-        dplyr::filter(
-          !eval(j) %in% excl$j
-        )
+    if (!is.null(t)) {
+      if (repeated_j) {
+        rep_j <- rep_j %>% 
+          dplyr::filter(
+            !eval(j) %in% excl$j
+          )
+      }
     }
   }
   
@@ -173,23 +175,25 @@ read_poEMirt <- function(dataframe,
   
   rownames(Y) <- sort(unique(dataframe$i))
   coln <- sort(unique(dataframe$j))
-  if (repeated_j) {
-    tmp1 <- stringr::str_split(coln, "-")
-    tt <- lapply(
-      tmp1,
-      function(x) {
-        as.integer(x[1]) - t_val
-      }
-    ) %>% 
-      unlist()
-    jj <- lapply(
-      tmp1,
-      function(x) {
-        as.integer(x[2]) - j_val
-      }
-    ) %>% 
-      unlist()
-    coln <- paste0(tt, "-", jj)
+  if (!is.null(t)) {
+    if (repeated_j) {
+      tmp1 <- stringr::str_split(coln, "-")
+      tt <- lapply(
+        tmp1,
+        function(x) {
+          as.integer(x[1]) - t_val
+        }
+      ) %>% 
+        unlist()
+      jj <- lapply(
+        tmp1,
+        function(x) {
+          as.integer(x[2]) - j_val
+        }
+      ) %>% 
+        unlist()
+      coln <- paste0(tt, "-", jj)
+    }
   }
   colnames(Y) <- coln
   dimnames(Y)[[3]] <- Ks
