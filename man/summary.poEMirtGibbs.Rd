@@ -11,7 +11,7 @@
 
 \item{parameter}{A character or character vector, indicating what parameters ("alpha", "beta", "theta") you want to get.}
 
-\item{ci}{A float (< 1). Confidence interval.}
+\item{ci}{A float (< 1). Credible interval.}
 
 \item{...}{Other arguments to \code{summary()}.}
 }

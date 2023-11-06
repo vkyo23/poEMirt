@@ -248,10 +248,10 @@ poEMirt_uncertainty <- function(fit,
         )
       }
     }
+    etime <- proc.time()[3]
+    el <- round(etime - stime, 1)
   }
-  etime <- proc.time()[3]
-  el <- round(etime - stime, 1)
-  cat("* DONE!\n")
+  cat("* DONE! Total time:", el, "sec.\n")
   sds <- list()
   if (fit$info$model == "dynamic") {
     if (method == "gibbs") {

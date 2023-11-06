@@ -151,7 +151,7 @@ summary.poEMirtFit <- function(object,
 #' @importFrom stringr str_c
 #' @importFrom tidyr pivot_longer drop_na
 #' @importFrom stats qnorm
-#' @importFrom rlang .data
+#' @importFrom rlang .data !! :=
 #' @export
 summary.poEMirtBoot <- function(object, 
                                 parameter = c("alpha", "beta", "theta"),
@@ -194,8 +194,8 @@ summary.poEMirtBoot <- function(object,
       
       tmp <- dplyr::bind_cols(est_mean, sds) %>% 
         dplyr::mutate(
-          ci_lwr = .data$estimate + sd * stats::qnorm(cis[1]),
-          ci_upr = .data$estimate + sd * stats::qnorm(cis[2])
+          !!paste0("ci_lwr", ci * 100) := .data$estimate + sd * stats::qnorm(cis[1]),
+          !!paste0("ci_upr", ci * 100) := .data$estimate + sd * stats::qnorm(cis[2])
         ) 
       if (exists("rep", object$input$fit$info$data)) {
         tmp <- tmp %>%
@@ -242,8 +242,8 @@ summary.poEMirtBoot <- function(object,
       
       tmp <- dplyr::bind_cols(est_mean, sds) %>% 
         dplyr::mutate(
-          ci_lwr = .data$estimate + sd * qnorm(cis[1]),
-          ci_upr = .data$estimate + sd * qnorm(cis[2])
+          !!paste0("ci_lwr", ci * 100) := .data$estimate + sd * qnorm(cis[1]),
+          !!paste0("ci_upr", ci * 100) := .data$estimate + sd * qnorm(cis[2])
         ) 
       if (exists("rep", object$input$fit$info$data)) {
         tmp <- tmp %>%
@@ -309,8 +309,8 @@ summary.poEMirtBoot <- function(object,
         dplyr::select("sd")
       tmp <- dplyr::bind_cols(est_mean, sd = sds) %>%
         dplyr::mutate(
-          ci_lwr = .data$estimate + sd * qnorm(cis[1]),
-          ci_upr = .data$estimate + sd * qnorm(cis[2])
+          !!paste0("ci_lwr", ci * 100) := .data$estimate + sd * qnorm(cis[1]),
+          !!paste0("ci_upr", ci * 100) := .data$estimate + sd * qnorm(cis[2])
         ) 
       out <- dplyr::bind_rows(out, tmp)
     }
@@ -322,7 +322,7 @@ summary.poEMirtBoot <- function(object,
 #' @description \code{summary.poEMirtGibbs} returns a dataframe of estimated parameters with confidence interval.
 #' @param object An object class of \code{poEMirtGibbs}.
 #' @param parameter A character or character vector, indicating what parameters ("alpha", "beta", "theta") you want to get. 
-#' @param ci A float (< 1). Confidence interval.
+#' @param ci A float (< 1). Credible interval.
 #' @param ... Other arguments to \code{summary()}.
 #' @returns A tibble dataframe.
 #' @importFrom dplyr %>% mutate select as_tibble bind_rows row_number bind_cols
@@ -342,7 +342,7 @@ summary.poEMirtGibbs <- function(object,
   out <- rep()
   if (any(parameter == "alpha")) {
     if (length(object$parameter$alpha) != 0) {
-      est_mean <- dimstat(object$parameter$alpha, fun = "mean", na.rm = TRUE)
+      est_mean <- apply(object$parameter$alpha, c(1, 2), mean, na.rm = TRUE)
       est_mean <- est_mean %>% 
         dplyr::as_tibble(.name_repair = "unique") %>% 
         dplyr::mutate(j = rownames(object$parameter$alpha)) %>% 
@@ -395,6 +395,7 @@ summary.poEMirtGibbs <- function(object,
         ) %>% 
         tidyr::drop_na() %>% 
         dplyr::select("ci_lwr")
+      names(lwr) <- paste0(names(lwr), ci * 100)
       upr <- upr %>% 
         dplyr::as_tibble(.name_repair = "unique") %>% 
         dplyr::mutate(j = dplyr::row_number()) %>% 
@@ -405,6 +406,7 @@ summary.poEMirtGibbs <- function(object,
         ) %>% 
         tidyr::drop_na() %>% 
         dplyr::select("ci_upr")
+      names(upr) <- paste0(names(upr), ci * 100)
       
       rhats <- apply(object$parameter$alpha, c(1, 2), posterior::rhat)
       rhats <- rhats %>% 
@@ -432,7 +434,7 @@ summary.poEMirtGibbs <- function(object,
   }
   if (any(parameter == "beta")) {
     if (length(object$parameter$beta) != 0) {
-      est_mean <- dimstat(object$parameter$beta, fun = "mean", na.rm = TRUE)
+      est_mean <- apply(object$parameter$beta, c(1, 2), mean, na.rm = TRUE)
       est_mean <- est_mean %>% 
         dplyr::as_tibble(.name_repair = "unique") %>% 
         dplyr::mutate(j = rownames(object$parameter$beta)) %>% 
@@ -485,6 +487,7 @@ summary.poEMirtGibbs <- function(object,
         ) %>% 
         tidyr::drop_na() %>% 
         dplyr::select("ci_lwr")
+      names(lwr) <- paste0(names(lwr), ci * 100)
       upr <- upr %>% 
         dplyr::as_tibble(.name_repair = "unique") %>% 
         dplyr::mutate(j = dplyr::row_number()) %>% 
@@ -495,6 +498,7 @@ summary.poEMirtGibbs <- function(object,
         ) %>% 
         tidyr::drop_na() %>% 
         dplyr::select("ci_upr")
+      names(upr) <- paste0(names(upr), ci * 100)
       
       rhats <- apply(object$parameter$beta, c(1, 2), posterior::rhat)
       rhats <- rhats %>% 
@@ -540,7 +544,7 @@ summary.poEMirtGibbs <- function(object,
       tmp <- dplyr::bind_cols(est_mean, median = est_median, sd = sds, ci_lwr = lwr, ci_upr = upr, rhat = rhats) 
       out <- dplyr::bind_rows(out, tmp)
     } else {
-      est_mean <- dimstat(object$parameter$theta, fun = "mean", na.rm = TRUE)
+      est_mean <- apply(object$parameter$theta, c(1, 2), mean, na.rm = TRUE)
       est_mean <- est_mean %>% 
         dplyr::as_tibble(.name_repair = "unique") %>% 
         dplyr::mutate(i = rownames(object$parameter$theta)) %>% 
@@ -596,6 +600,7 @@ summary.poEMirtGibbs <- function(object,
         ) %>% 
         tidyr::drop_na() %>% 
         dplyr::select("ci_lwr")
+      names(lwr) <- paste0(names(lwr), ci * 100)
       upr <- upr %>% 
         dplyr::as_tibble(.name_repair = "unique") %>% 
         dplyr::mutate(i = dplyr::row_number()) %>% 
@@ -606,7 +611,7 @@ summary.poEMirtGibbs <- function(object,
         ) %>% 
         tidyr::drop_na() %>% 
         dplyr::select("ci_upr")
-      
+      names(upr) <- paste0(names(upr), ci * 100)
       rhats <- apply(object$parameter$theta, c(1, 2), posterior::rhat)
       rhats <- rhats %>% 
         dplyr::as_tibble(.name_repair = "unique") %>% 

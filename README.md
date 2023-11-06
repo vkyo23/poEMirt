@@ -63,7 +63,7 @@ tail(sim_data_dynamic)
 # Convert into poEMirt-readable data
 data <- read_poEMirt(
   data = sim_data_dynamic,
-  responses = paste0('y', 1:5),
+  responses = paste0("y", 1:5),
   i = "i",
   j = "j",
   t = "t"
@@ -83,6 +83,7 @@ summary(data)
 fit <- poEMirt(
   data = data,
   model = "dynamic",
+  theta_std = TRUE, # Standardizing theta
   control = list(
     verbose = 10
   )
@@ -91,7 +92,7 @@ fit <- poEMirt(
 #> * Setting priors.....DONE!
 #> * Finding best initial values.....DONE!
 #> * Expectation-Maximization
-#> Iteration 10: eval = 1.63261e-06
+#>   - Iteration 10: eval = 1.78972e-06
 #> * Model converged at iteration 12 : 0.1 sec.
 
 # Summarize the result
@@ -100,16 +101,16 @@ summary(fit, parameter = "theta")
 #> # A tibble: 7,581 × 4
 #>    parameter index  reference estimate
 #>    <chr>     <chr>  <chr>        <dbl>
-#>  1 theta     [1,1]  [i,t]       -0.576
-#>  2 theta     [1,2]  [i,t]       -0.673
-#>  3 theta     [1,3]  [i,t]       -0.576
-#>  4 theta     [1,4]  [i,t]       -0.568
-#>  5 theta     [1,5]  [i,t]       -0.596
-#>  6 theta     [1,6]  [i,t]       -0.647
-#>  7 theta     [1,7]  [i,t]       -0.752
-#>  8 theta     [1,8]  [i,t]       -0.847
-#>  9 theta     [1,9]  [i,t]       -0.928
-#> 10 theta     [1,10] [i,t]       -0.898
+#>  1 theta     [1,1]  [i,t]       -0.673
+#>  2 theta     [1,2]  [i,t]       -0.769
+#>  3 theta     [1,3]  [i,t]       -0.675
+#>  4 theta     [1,4]  [i,t]       -0.670
+#>  5 theta     [1,5]  [i,t]       -0.701
+#>  6 theta     [1,6]  [i,t]       -0.756
+#>  7 theta     [1,7]  [i,t]       -0.871
+#>  8 theta     [1,8]  [i,t]       -0.978
+#>  9 theta     [1,9]  [i,t]       -1.07 
+#> 10 theta     [1,10] [i,t]       -1.04 
 #> # ℹ 7,571 more rows
 ```
 
@@ -152,6 +153,7 @@ data2 <- read_poEMirt(
 fit2 <- poEMirt(
   data = data2,
   model = "dynamic",
+  theta_std = TRUE,
   alpha_fix = TRUE, # Fix alpha or not
   control = list(
     verbose = 10
@@ -170,16 +172,16 @@ summary(fit2, parameter = "alpha") |>
 #> # A tibble: 40 × 4
 #>    parameter index     reference estimate
 #>    <chr>     <chr>     <chr>        <dbl>
-#>  1 alpha     [1,1,y1]  [t,j,k]      0.181
-#>  2 alpha     [2,1,y1]  [t,j,k]      0.181
-#>  3 alpha     [3,1,y1]  [t,j,k]      0.181
-#>  4 alpha     [4,1,y1]  [t,j,k]      0.181
-#>  5 alpha     [5,1,y1]  [t,j,k]      0.181
-#>  6 alpha     [6,1,y1]  [t,j,k]      0.181
-#>  7 alpha     [7,1,y1]  [t,j,k]      0.181
-#>  8 alpha     [8,1,y1]  [t,j,k]      0.181
-#>  9 alpha     [9,1,y1]  [t,j,k]      0.181
-#> 10 alpha     [10,1,y1] [t,j,k]      0.181
+#>  1 alpha     [1,1,y1]  [t,j,k]      0.183
+#>  2 alpha     [2,1,y1]  [t,j,k]      0.183
+#>  3 alpha     [3,1,y1]  [t,j,k]      0.183
+#>  4 alpha     [4,1,y1]  [t,j,k]      0.183
+#>  5 alpha     [5,1,y1]  [t,j,k]      0.183
+#>  6 alpha     [6,1,y1]  [t,j,k]      0.183
+#>  7 alpha     [7,1,y1]  [t,j,k]      0.183
+#>  8 alpha     [8,1,y1]  [t,j,k]      0.183
+#>  9 alpha     [9,1,y1]  [t,j,k]      0.183
+#> 10 alpha     [10,1,y1] [t,j,k]      0.183
 #> # ℹ 30 more rows
 ```
 
@@ -198,38 +200,29 @@ fit_boot <- poEMirt_uncertainty(
   seed = 1,
   iter = 100,
   control = list(
-    verbose = 10
+    verbose = 10,
+    thread = 8 # parallel
   )
 )
 #> === Parametric bootstrap to estimate statistical uncertainty for poEMirt ===
-#> * Bootstrap 1 / 100 
-#> * Bootstrap 10 / 100 
-#> * Bootstrap 20 / 100 
-#> * Bootstrap 30 / 100 
-#> * Bootstrap 40 / 100 
-#> * Bootstrap 50 / 100 
-#> * Bootstrap 60 / 100 
-#> * Bootstrap 70 / 100 
-#> * Bootstrap 80 / 100 
-#> * Bootstrap 90 / 100 
-#> * Bootstrap 100 / 100 
-#> * DONE!
+#> * Computing 100 bootstraps with 8 threads.....
+#> * DONE! Total time: 18.6 sec.
 
 summary(fit_boot, parameter = "theta", ci = 0.95)
 #> * Summarizing following parameters:  theta
 #> # A tibble: 7,581 × 7
-#>    parameter index  reference estimate     sd ci_lwr ci_upr
-#>    <chr>     <chr>  <chr>        <dbl>  <dbl>  <dbl>  <dbl>
-#>  1 theta     [1,1]  [i,t]       -0.576 0.0391 -0.652 -0.499
-#>  2 theta     [1,2]  [i,t]       -0.673 0.0367 -0.745 -0.601
-#>  3 theta     [1,3]  [i,t]       -0.576 0.0342 -0.643 -0.509
-#>  4 theta     [1,4]  [i,t]       -0.568 0.0443 -0.655 -0.481
-#>  5 theta     [1,5]  [i,t]       -0.596 0.0422 -0.679 -0.514
-#>  6 theta     [1,6]  [i,t]       -0.647 0.0367 -0.719 -0.575
-#>  7 theta     [1,7]  [i,t]       -0.752 0.0419 -0.834 -0.670
-#>  8 theta     [1,8]  [i,t]       -0.847 0.0457 -0.937 -0.758
-#>  9 theta     [1,9]  [i,t]       -0.928 0.0405 -1.01  -0.849
-#> 10 theta     [1,10] [i,t]       -0.898 0.0427 -0.982 -0.815
+#>    parameter index  reference estimate     sd ci_lwr95 ci_upr95
+#>    <chr>     <chr>  <chr>        <dbl>  <dbl>    <dbl>    <dbl>
+#>  1 theta     [1,1]  [i,t]       -0.673 0.0436   -0.758   -0.587
+#>  2 theta     [1,2]  [i,t]       -0.769 0.0408   -0.849   -0.689
+#>  3 theta     [1,3]  [i,t]       -0.675 0.0380   -0.749   -0.600
+#>  4 theta     [1,4]  [i,t]       -0.670 0.0453   -0.759   -0.581
+#>  5 theta     [1,5]  [i,t]       -0.701 0.0461   -0.792   -0.611
+#>  6 theta     [1,6]  [i,t]       -0.756 0.0500   -0.854   -0.658
+#>  7 theta     [1,7]  [i,t]       -0.871 0.0517   -0.972   -0.770
+#>  8 theta     [1,8]  [i,t]       -0.978 0.0500   -1.08    -0.880
+#>  9 theta     [1,9]  [i,t]       -1.07  0.0391   -1.14    -0.991
+#> 10 theta     [1,10] [i,t]       -1.04  0.0484   -1.13    -0.945
 #> # ℹ 7,571 more rows
 ```
 
@@ -244,42 +237,36 @@ fit_gibbs <- poEMirt_uncertainty(
   seed = 1,
   iter = 500,
   control = list(
-    verbose = 50,
+    verbose = 100,
     warmup = 100,
     thin = 5
   )
 )
 #> === Gibbs Sampling to estimate statistical uncertainty for poEMirt ===
 #> * Warmup 1 / 600
-#> * Warmup 50 / 600
 #> * Warmup 100 / 600
-#> * Sampling 150 / 600
 #> * Sampling 200 / 600
-#> * Sampling 250 / 600
 #> * Sampling 300 / 600
-#> * Sampling 350 / 600
 #> * Sampling 400 / 600
-#> * Sampling 450 / 600
 #> * Sampling 500 / 600
-#> * Sampling 550 / 600
 #> * Sampling 600 / 600
-#> * DONE!
+#> * DONE! Total time: 11.5 sec.
 
 summary(fit_gibbs, parameter = "theta", ci = 0.95)
 #> * Summarizing following parameters: theta
 #> # A tibble: 7,581 × 9
-#>    parameter index  reference   mean median     sd ci_lwr ci_upr  rhat
-#>    <chr>     <chr>  <chr>      <dbl>  <dbl>  <dbl>  <dbl>  <dbl> <dbl>
-#>  1 theta     [1,1]  [i,t]     -0.329 -0.317 0.0995 -0.529 -0.148  1.52
-#>  2 theta     [1,2]  [i,t]     -0.381 -0.375 0.115  -0.583 -0.172  1.78
-#>  3 theta     [1,3]  [i,t]     -0.286 -0.287 0.0964 -0.453 -0.119  1.85
-#>  4 theta     [1,4]  [i,t]     -0.330 -0.342 0.120  -0.563 -0.103  1.53
-#>  5 theta     [1,5]  [i,t]     -0.363 -0.358 0.120  -0.596 -0.136  1.46
-#>  6 theta     [1,6]  [i,t]     -0.383 -0.368 0.0924 -0.559 -0.194  1.60
-#>  7 theta     [1,7]  [i,t]     -0.435 -0.434 0.118  -0.646 -0.227  1.46
-#>  8 theta     [1,8]  [i,t]     -0.490 -0.490 0.110  -0.703 -0.290  1.29
-#>  9 theta     [1,9]  [i,t]     -0.541 -0.526 0.121  -0.799 -0.308  1.30
-#> 10 theta     [1,10] [i,t]     -0.594 -0.581 0.122  -0.826 -0.398  1.32
+#>    parameter index  reference   mean median     sd ci_lwr95 ci_upr95  rhat
+#>    <chr>     <chr>  <chr>      <dbl>  <dbl>  <dbl>    <dbl>    <dbl> <dbl>
+#>  1 theta     [1,1]  [i,t]     -0.608 -0.604 0.0635   -0.739   -0.492 0.994
+#>  2 theta     [1,2]  [i,t]     -0.662 -0.671 0.0709   -0.775   -0.522 1.09 
+#>  3 theta     [1,3]  [i,t]     -0.572 -0.577 0.0579   -0.673   -0.441 1.01 
+#>  4 theta     [1,4]  [i,t]     -0.620 -0.623 0.0904   -0.813   -0.449 1.00 
+#>  5 theta     [1,5]  [i,t]     -0.658 -0.659 0.0908   -0.815   -0.476 0.996
+#>  6 theta     [1,6]  [i,t]     -0.683 -0.687 0.0498   -0.775   -0.592 0.996
+#>  7 theta     [1,7]  [i,t]     -0.739 -0.738 0.0818   -0.866   -0.554 0.997
+#>  8 theta     [1,8]  [i,t]     -0.799 -0.806 0.0872   -0.970   -0.612 1.01 
+#>  9 theta     [1,9]  [i,t]     -0.854 -0.854 0.0986   -1.06    -0.679 0.993
+#> 10 theta     [1,10] [i,t]     -0.908 -0.906 0.0978   -1.08    -0.731 1.03 
 #> # ℹ 7,571 more rows
 ```
 
@@ -367,6 +354,7 @@ fit <- poEMirt(
   data = data,
   model = "dynamic",
   constraint = con,
+  theta_std = TRUE,
   control = list(
     verbose = 10
   )
@@ -375,23 +363,23 @@ fit <- poEMirt(
 #> * Setting priors.....DONE!
 #> * Finding best initial values.....DONE!
 #> * Expectation-Maximization
-#> * Model converged at iteration 8 : 0 sec.
+#> * Model converged at iteration 3 : 0 sec.
 
 summary(fit, parameter = "theta")
 #> * Summarizing following parameters: theta
 #> # A tibble: 99 × 4
 #>    parameter index       reference estimate
 #>    <chr>     <chr>       <chr>        <dbl>
-#>  1 theta     [Breyer,1]  [i,t]        -1.43
-#>  2 theta     [Breyer,2]  [i,t]        -1.44
-#>  3 theta     [Breyer,3]  [i,t]        -1.47
-#>  4 theta     [Breyer,4]  [i,t]        -1.47
-#>  5 theta     [Breyer,5]  [i,t]        -1.47
-#>  6 theta     [Breyer,6]  [i,t]        -1.47
-#>  7 theta     [Breyer,7]  [i,t]        -1.50
-#>  8 theta     [Breyer,8]  [i,t]        -1.50
-#>  9 theta     [Breyer,9]  [i,t]        -1.49
-#> 10 theta     [Breyer,10] [i,t]        -1.47
+#>  1 theta     [Breyer,1]  [i,t]       -0.841
+#>  2 theta     [Breyer,2]  [i,t]       -0.856
+#>  3 theta     [Breyer,3]  [i,t]       -0.872
+#>  4 theta     [Breyer,4]  [i,t]       -0.875
+#>  5 theta     [Breyer,5]  [i,t]       -0.870
+#>  6 theta     [Breyer,6]  [i,t]       -0.868
+#>  7 theta     [Breyer,7]  [i,t]       -0.893
+#>  8 theta     [Breyer,8]  [i,t]       -0.891
+#>  9 theta     [Breyer,9]  [i,t]       -0.880
+#> 10 theta     [Breyer,10] [i,t]       -0.863
 #> # ℹ 89 more rows
 ```
 
@@ -455,7 +443,8 @@ data <- read_poEMirt(
   responses = c("yes", "abstain", "no"), # "no" is the baseline 
   i = "country",
   j = "rcid",
-  t = "session"
+  t = "session",
+  smooth = "no" # Do not estimate ideal point in missing years
 )
 #> * Remove following items due to no variation in responses
 #>   - 11 122 182 368 399 428 440 441 443 444 447 448 449 451 452 460 461 462 484 487 503 505 642 733 799 876 913 943 944 946 1177 1196 1211 1251 1288 1299 1348 1349 1364 1378 1393 1400 1408 1417 1450 1472 1519 1542 1565 1595 1673 1736 1754 1755 1759 1763 1765 1770 1771 1846 1851 1856 1907 1960 2068 2363 2453 3009 3142 3245 3680 4024 4025 4385 4534 4852 4997 5034 5342 5496 5574 5893
@@ -479,7 +468,7 @@ fit <- poEMirt(
   data = data,
   model = "dynamic",
   constraint = con,
-  theta_std = TRUE, # Standardizing theta
+  theta_std = TRUE, 
   control = list(
     verbose = 10
   )
@@ -488,10 +477,10 @@ fit <- poEMirt(
 #> * Setting priors.....DONE!
 #> * Finding best initial values.....DONE!
 #> * Expectation-Maximization
-#> Iteration 10: eval = 0.000140755
-#> Iteration 20: eval = 3.28484e-05
-#> Iteration 30: eval = 2.43506e-06
-#> * Model converged at iteration 35 : 6.7 sec.
+#>   - Iteration 10: eval = 0.000136064
+#>   - Iteration 20: eval = 3.24902e-05
+#>   - Iteration 30: eval = 2.20166e-06
+#> * Model converged at iteration 34 : 6.4 sec.
 
 # Visualize
 library(ggplot2)
@@ -514,7 +503,7 @@ summary(fit, parameter = "theta") |>
 #> * Summarizing following parameters: theta
 ```
 
-<img src="man/figures/README-unnamed-chunk-10-1.png" width="100%" />
+<img src="man/figures/README-UNGArollcall-1.png" width="100%" />
 
 # References
 

@@ -48,7 +48,7 @@ tail(sim_data_dynamic)
 # Convert into poEMirt-readable data
 data <- read_poEMirt(
   data = sim_data_dynamic,
-  responses = paste0('y', 1:5),
+  responses = paste0("y", 1:5),
   i = "i",
   j = "j",
   t = "t"
@@ -59,6 +59,7 @@ summary(data)
 fit <- poEMirt(
   data = data,
   model = "dynamic",
+  theta_std = TRUE, # Standardizing theta
   control = list(
     verbose = 10
   )
@@ -92,6 +93,7 @@ data2 <- read_poEMirt(
 fit2 <- poEMirt(
   data = data2,
   model = "dynamic",
+  theta_std = TRUE,
   alpha_fix = TRUE, # Fix alpha or not
   control = list(
     verbose = 10
@@ -117,7 +119,8 @@ fit_boot <- poEMirt_uncertainty(
   seed = 1,
   iter = 100,
   control = list(
-    verbose = 10
+    verbose = 10,
+    thread = 8 # parallel
   )
 )
 
@@ -141,7 +144,7 @@ fit_gibbs <- poEMirt_uncertainty(
   seed = 1,
   iter = 500,
   control = list(
-    verbose = 50,
+    verbose = 100,
     warmup = 100,
     thin = 5
   )
@@ -207,6 +210,7 @@ fit <- poEMirt(
   data = data,
   model = "dynamic",
   constraint = con,
+  theta_std = TRUE,
   control = list(
     verbose = 10
   )
@@ -219,7 +223,7 @@ summary(fit, parameter = "theta")
 
 Using the roll-call vote data of United Nations General Assembly (session 1 to 74) from [`{unvotes}`](https://github.com/dgrtwo/unvotes) by Robinson & Goguen-Compagnoni (2021). Note that the original data is from Voeten (2013). The outcome of interest consists of "yes", "abstain", and "no".
 
-```{r}
+```{r, UNGArollcall}
 data(un_roll_calls, package = "unvotes")
 data(un_votes, package = "unvotes")
 
@@ -253,7 +257,8 @@ data <- read_poEMirt(
   responses = c("yes", "abstain", "no"), # "no" is the baseline 
   i = "country",
   j = "rcid",
-  t = "session"
+  t = "session",
+  smooth = "no" # Do not estimate ideal point in missing years
 )
 summary(data)
 
@@ -266,7 +271,7 @@ fit <- poEMirt(
   data = data,
   model = "dynamic",
   constraint = con,
-  theta_std = TRUE, # Standardizing theta
+  theta_std = TRUE, 
   control = list(
     verbose = 10
   )
