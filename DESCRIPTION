@@ -1,6 +1,6 @@
 Package: poEMirt
 Type: Package
-Title: A Fast EM Item Response Theory Model for Public Opinion Data Analysis
+Title: A Fast EM Item Response Theory Model for Cross-national Public Opinion Data Analysis
 Version: 0.0.0.9000
 Date: 2023-10-12
 Author: Ukyo Kanetaka

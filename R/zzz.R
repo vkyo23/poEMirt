@@ -1,5 +1,5 @@
 .onAttach <- function(...) {
-  packageStartupMessage("* `poEMirt`: A fast item response theory models for public opinion data analysis")
+  packageStartupMessage("* `poEMirt`: A fast item response theory models for cross-national public opinion data analysis")
 }
 
 .onUnload <- function(libpath) {

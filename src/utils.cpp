@@ -88,7 +88,8 @@ List get_dynamic_info (const arma::mat &N,
 }
 
 
-cube calc_predY(const mat &N,
+cube calc_predY(const cube &Y,
+                const mat &N,
                 const mat &alpha, 
                 const mat &beta, 
                 const vec &theta,
@@ -106,15 +107,19 @@ cube calc_predY(const mat &N,
         vec unq = unique_categories[j];
         vec pi_(unq.size());
         for (unsigned int k = 0; k < (unq.size()-1); k++) {
-          double psi = alpha(j, unq[k]) + beta(j, unq[k]) * theta[i];
-          pi_[k] = (std::exp(psi) / (1 + std::exp(psi))) * stick;
-          stick -= pi_[k];
+          if (!NumericVector::is_na(Y(i, j, unq[k]))) {
+            double psi = alpha(j, unq[k]) + beta(j, unq[k]) * theta[i];
+            pi_[k] = (std::exp(psi) / (1 + std::exp(psi))) * stick;
+            stick -= pi_[k];
+          }
         }
         pi_[unq.size() - 1] = stick;
         int N_ij = N(i, j);
         vec tmp = rmultinom2(N_ij, pi_);
         for (unsigned int k = 0; k < unq.size(); k++) {
-          predY(i, j, unq[k]) = tmp[k];
+          if (!NumericVector::is_na(Y(i, j, unq[k]))) {
+            predY(i, j, unq[k]) = tmp[k];
+          } 
         }
       }
     }
@@ -122,7 +127,8 @@ cube calc_predY(const mat &N,
   return predY;
 }
 
-cube dyn_calc_predY(const mat &N,
+cube dyn_calc_predY(const cube &Y,
+                    const mat &N,
                     const mat &alpha, 
                     const mat &beta, 
                     const mat &theta,
@@ -143,15 +149,19 @@ cube dyn_calc_predY(const mat &N,
           vec unq = unique_categories[j];
           vec pi_(unq.size());
           for (unsigned int k = 0; k < (unq.size()-1); k++) {
-            double psi = alpha(j, unq[k]) + beta(j, unq[k]) * theta(i, t);
-            pi_[k] = (std::exp(psi) / (1 + std::exp(psi))) * stick;
-            stick -= pi_[k];
+            if (!NumericVector::is_na(Y(i, j, unq[k]))) {
+              double psi = alpha(j, unq[k]) + beta(j, unq[k]) * theta(i, t);
+              pi_[k] = (std::exp(psi) / (1 + std::exp(psi))) * stick;
+              stick -= pi_[k];
+            }
           }
           pi_[unq.size() - 1] = stick;
           int N_ij = N(i, j);
           vec tmp = rmultinom2(N_ij, pi_);
           for (unsigned int k = 0; k < unq.size(); k++) {
-            predY(i, j, unq[k]) = tmp[k];
+            if (!NumericVector::is_na(Y(i, j, unq[k]))) {
+              predY(i, j, unq[k]) = tmp[k];
+            } 
           }
         }
       }
@@ -161,7 +171,8 @@ cube dyn_calc_predY(const mat &N,
 }
 
 
-cube calc_probY(const mat &alpha, 
+cube calc_probY(const cube &Y,
+                const mat &alpha, 
                 const mat &beta, 
                 const vec &theta,
                 const std::vector<vec> &unique_categories) 
@@ -170,26 +181,32 @@ cube calc_probY(const mat &alpha,
   int J = alpha.n_rows;
   int K = alpha.n_cols + 1;
   cube probY(I, J, K);
+  probY.fill(NA_REAL);
   for (int i = 0; i < I; i++) {
     for (int j = 0; j < J; j++) {
       double stick = 1.0;
       vec unq = unique_categories[j];
       vec pi_(unq.size());
       for (unsigned int k = 0; k < (unq.size()-1); k++) {
-        double psi = alpha(j, unq[k]) + beta(j, unq[k]) * theta[i];
-        pi_[k] = (std::exp(psi) / (1 + std::exp(psi))) * stick;
-        stick -= pi_[k];
+        if (!NumericVector::is_na(Y(i, j, unq[k]))) {
+          double psi = alpha(j, unq[k]) + beta(j, unq[k]) * theta[i];
+          pi_[k] = (std::exp(psi) / (1 + std::exp(psi))) * stick;
+          stick -= pi_[k];
+        }
       }
       pi_[unq.size() - 1] = stick;
       for (unsigned int k = 0; k < unq.size(); k++) {
-        probY(i, j, unq[k]) = pi_[k];
+        if (!NumericVector::is_na(Y(i, j, unq[k]))) {
+          probY(i, j, unq[k]) = pi_[k];
+        }
       }
     }
   }
   return probY;
 }
 
-cube dyn_calc_probY(const mat &alpha, 
+cube dyn_calc_probY(const cube &Y,
+                    const mat &alpha, 
                     const mat &beta, 
                     const mat &theta,
                     const std::vector<vec> &unique_categories,
@@ -199,6 +216,7 @@ cube dyn_calc_probY(const mat &alpha,
   int J = alpha.n_rows;
   int K = alpha.n_cols + 1;
   cube probY(I, J, K);
+  probY.fill(NA_REAL);
   for (int i = 0; i < I; i++) {
     for (int j = 0; j < J; j++) {
       int t = item_timemap[j];
@@ -207,13 +225,17 @@ cube dyn_calc_probY(const mat &alpha,
         vec unq = unique_categories[j];
         vec pi_(unq.size());
         for (unsigned int k = 0; k < (unq.size()-1); k++) {
-          double psi = alpha(j, unq[k]) + beta(j, unq[k]) * theta(i, t);
-          pi_[k] = (std::exp(psi) / (1 + std::exp(psi))) * stick;
-          stick -= pi_[k];
+          if (!NumericVector::is_na(Y(i, j, unq[k]))) {
+            double psi = alpha(j, unq[k]) + beta(j, unq[k]) * theta(i, t);
+            pi_[k] = (std::exp(psi) / (1 + std::exp(psi))) * stick;
+            stick -= pi_[k];
+          }
         }
         pi_[unq.size() - 1] = stick;
         for (unsigned int k = 0; k < unq.size(); k++) {
-          probY(i, j, unq[k]) = pi_[k];
+          if (!NumericVector::is_na(Y(i, j, unq[k]))) {
+            probY(i, j, unq[k]) = pi_[k];
+          }
         }
       }
     }
@@ -222,7 +244,8 @@ cube dyn_calc_probY(const mat &alpha,
 }
 
 //[[Rcpp::export]]
-arma::cube prediction(const arma::mat &N,
+arma::cube prediction(const arma::cube &Y,
+                      const arma::mat &N,
                       const arma::mat &alpha, 
                       const arma::mat &beta, 
                       const arma::mat &theta,
@@ -234,12 +257,14 @@ arma::cube prediction(const arma::mat &N,
   cube out;
   if (type == "prob") {
     if (model == "static") {
-      out = calc_probY(alpha,
+      out = calc_probY(Y, 
+                       alpha,
                        beta,
                        theta.col(0),
                        unique_categories);
     } else {
-      out = dyn_calc_probY(alpha,
+      out = dyn_calc_probY(Y,
+                           alpha,
                            beta,
                            theta,
                            unique_categories,
@@ -247,13 +272,15 @@ arma::cube prediction(const arma::mat &N,
     }
   } else {
     if (model == "static") {
-      out = calc_predY(N,
+      out = calc_predY(Y,
+                       N,
                        alpha,
                        beta,
                        theta.col(0),
                        unique_categories);
     } else {
-      out = dyn_calc_predY(N,
+      out = dyn_calc_predY(Y,
+                           N,
                            alpha,
                            beta,
                            theta,

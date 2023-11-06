@@ -77,7 +77,8 @@ poEMirt <- function(data,
                     theta_std = FALSE,
                     init = NULL, 
                     priors = NULL, 
-                    control = NULL) {
+                    control = NULL) 
+{
   cat("=== poEMirt starts! ===\n")
   
   # Input check

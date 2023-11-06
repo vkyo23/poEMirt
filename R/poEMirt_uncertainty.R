@@ -95,7 +95,7 @@ poEMirt_uncertainty <- function(fit,
       control$thread <- 1
     } else {
       if (control$thread != 1) {
-        cat("* Computing with", control$thread, "threads.....\n")
+        cat("* Computing", iter, "bootstraps with", control$thread, "threads.....\n")
       }
     }
     verb <- ifelse(is.null(control$verbose), iter+1, control$verbose)

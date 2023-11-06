@@ -326,7 +326,7 @@ void poEMirtdynamic::fit()
         iter = maxit;
         break;
       } else if (g % verbose == 0) {
-        Rcout << "Iteration " << g << ": eval = " << (1 - convmat.row(g).min()) << '\n';
+        Rcout << "  - Iteration " << g << ": eval = " << (1 - convmat.row(g).min()) << '\n';
       }
     }
     

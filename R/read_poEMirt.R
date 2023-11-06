@@ -41,7 +41,8 @@ read_poEMirt <- function(dataframe,
                          i, 
                          j, 
                          t = NULL, 
-                         smooth = NULL) {
+                         smooth = NULL) 
+{
   # Input check
   if (!class(dataframe)[1] %in% c("tbl_df", "data.frame")) stop("`dataframe` should be a data.frame or tbl_df.")
   if (is.null(smooth)) smooth <- "default"

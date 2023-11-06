@@ -169,11 +169,12 @@ BEGIN_RCPP
 END_RCPP
 }
 // prediction
-arma::cube prediction(const arma::mat& N, const arma::mat& alpha, const arma::mat& beta, const arma::mat& theta, const std::vector<arma::vec> unique_categories, const arma::vec& item_timemap, const String& model, const String& type);
-RcppExport SEXP _poEMirt_prediction(SEXP NSEXP, SEXP alphaSEXP, SEXP betaSEXP, SEXP thetaSEXP, SEXP unique_categoriesSEXP, SEXP item_timemapSEXP, SEXP modelSEXP, SEXP typeSEXP) {
+arma::cube prediction(const arma::cube& Y, const arma::mat& N, const arma::mat& alpha, const arma::mat& beta, const arma::mat& theta, const std::vector<arma::vec> unique_categories, const arma::vec& item_timemap, const String& model, const String& type);
+RcppExport SEXP _poEMirt_prediction(SEXP YSEXP, SEXP NSEXP, SEXP alphaSEXP, SEXP betaSEXP, SEXP thetaSEXP, SEXP unique_categoriesSEXP, SEXP item_timemapSEXP, SEXP modelSEXP, SEXP typeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::cube& >::type Y(YSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type N(NSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type alpha(alphaSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type beta(betaSEXP);
@@ -182,7 +183,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const arma::vec& >::type item_timemap(item_timemapSEXP);
     Rcpp::traits::input_parameter< const String& >::type model(modelSEXP);
     Rcpp::traits::input_parameter< const String& >::type type(typeSEXP);
-    rcpp_result_gen = Rcpp::wrap(prediction(N, alpha, beta, theta, unique_categories, item_timemap, model, type));
+    rcpp_result_gen = Rcpp::wrap(prediction(Y, N, alpha, beta, theta, unique_categories, item_timemap, model, type));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -194,7 +195,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_poEMirt_poEMirtdynamic_gibbs_fit", (DL_FUNC) &_poEMirt_poEMirtdynamic_gibbs_fit, 29},
     {"_poEMirt_construct_sb_auxs", (DL_FUNC) &_poEMirt_construct_sb_auxs, 3},
     {"_poEMirt_get_dynamic_info", (DL_FUNC) &_poEMirt_get_dynamic_info, 3},
-    {"_poEMirt_prediction", (DL_FUNC) &_poEMirt_prediction, 8},
+    {"_poEMirt_prediction", (DL_FUNC) &_poEMirt_prediction, 9},
     {NULL, NULL, 0}
 };
 

@@ -25,7 +25,7 @@ get_dynamic_info <- function(N, item_timemap, timemap) {
     .Call(`_poEMirt_get_dynamic_info`, N, item_timemap, timemap)
 }
 
-prediction <- function(N, alpha, beta, theta, unique_categories, item_timemap, model, type) {
-    .Call(`_poEMirt_prediction`, N, alpha, beta, theta, unique_categories, item_timemap, model, type)
+prediction <- function(Y, N, alpha, beta, theta, unique_categories, item_timemap, model, type) {
+    .Call(`_poEMirt_prediction`, Y, N, alpha, beta, theta, unique_categories, item_timemap, model, type)
 }
 

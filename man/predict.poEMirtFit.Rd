@@ -4,13 +4,7 @@
 \alias{predict.poEMirtFit}
 \title{Predict function}
 \usage{
-\method{predict}{poEMirtFit}(
-  object,
-  type = c("prob", "response"),
-  return = c("array", "dataframe"),
-  seed = NULL,
-  ...
-)
+\method{predict}{poEMirtFit}(object, type = c("prob", "response"), seed = NULL, ...)
 }
 \arguments{
 \item{object}{An object class of \code{poEMirtFit}}
@@ -18,14 +12,12 @@
 \item{type}{A character, one of "prob" or "response". "prob" returns predicted probabilities of choices 
 and "response" returns predicted value of Y.}
 
-\item{return}{Type of returning object. "array" or "dataframe".}
-
 \item{seed}{An integer of random seed. This works when \code{type = "response"}.}
 
 \item{...}{Other arguments to \code{predict()}.}
 }
 \value{
-3D array or dataframe
+A dataframe of predicted values.
 }
 \description{
 Predict function for `poEMirtFit`
