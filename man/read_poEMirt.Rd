@@ -22,6 +22,7 @@ read_poEMirt(dataframe, responses, i, j, t = NULL, smooth = NULL)
   \item \code{"no"} No smoothing.
   \item \code{"default"} Using from the start time of i to T.
   \item \code{"finite"} Using from the start time of it to the end time.
+  \item \code{"full"} Estimating all years.
  }}
 }
 \value{

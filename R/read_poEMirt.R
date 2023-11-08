@@ -11,6 +11,7 @@
 #'   \item \code{"no"} No smoothing.
 #'   \item \code{"default"} Using from the start time of i to T.
 #'   \item \code{"finite"} Using from the start time of it to the end time.
+#'   \item \code{"full"} Estimating all years.
 #'  }
 #' 
 #' @return A \code{poEMirtData} object.
@@ -46,8 +47,8 @@ read_poEMirt <- function(dataframe,
   # Input check
   if (!class(dataframe)[1] %in% c("tbl_df", "data.frame")) stop("`dataframe` should be a data.frame or tbl_df.")
   if (is.null(smooth)) smooth <- "default"
-  smooth <- match.arg(smooth, choices = c("no", "default", "finite"))
-  if (length(smooth) > 1) stop("`smooth` must be one of 'no', 'default', or 'finite'.")
+  smooth <- match.arg(smooth, choices = c("no", "default", "finite", "full"))
+  if (length(smooth) > 1) stop("`smooth` must be one of 'no', 'default', 'finite', or 'full'.")
   
   # Size
   i <- rlang::sym(i)
@@ -271,6 +272,8 @@ read_poEMirt <- function(dataframe,
         Ti_end <- names(which.max(which(timemap[ii, ] == 1)))
         timemap[ii, Ti_start:Ti_end] <- 1
       }
+    } else if (smooth == "full") {
+      timemap[timemap == 0] <- 1
     }
     
     # Item time-map
