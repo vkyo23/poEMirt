@@ -59,7 +59,7 @@ summary(data)
 fit <- poEMirt(
   data = data,
   model = "dynamic",
-  theta_std = TRUE, # Standardizing theta
+  std_theta = TRUE, # Standardizing theta
   control = list(
     verbose = 10
   )
@@ -69,12 +69,11 @@ fit <- poEMirt(
 summary(fit, parameter = "theta")
 ```
 
-#### Repeated items and bridging estimation
+#### Repeated items
 
-Public opinion data typically contains repeated items over time. 
-To strictly estimate the change in latent traits, one should do bridging estimation by pinning down the location of cutpoints (alpha) of repeated items (Baiely 2007). 
+Public opinion data typically contains repeated items over time, and one may want to estimate repeated items' parameters globally.
+Users can do such estimation by setting `fix_alpha = TRUE` and `fix_beta = TRUE` in `poEMirt()`.
 In the previous example, we saw that `j` is unique in terms of `t`, but in this example, simulated data below has repeated `j`. `read_poEMirt()` automatically detects such repeated items and creates a poEMirt-readable object.
-Users can do bridging estimation by setting `alpha_fix = TRUE` in `poEMirt()`.
 
 ```{r}
 # Repeated item data
@@ -93,16 +92,42 @@ data2 <- read_poEMirt(
 fit2 <- poEMirt(
   data = data2,
   model = "dynamic",
-  theta_std = TRUE,
-  alpha_fix = TRUE, # Fix alpha or not
+  fix_alpha = TRUE, # Fix alpha or not
+  fix_beta = TRUE, # Fix beta or not
+  std_theta = TRUE,
   control = list(
     verbose = 10
   )
 )
 
-# Same cutpoint estimates!
-summary(fit2, parameter = "alpha") |> 
-  filter(str_detect(index, "\\[\\d+,1,.+"))
+# Same alpha and beta estimates!
+summary(fit2, parameter = c("alpha", "beta")) |> 
+  filter(str_detect(index, "\\[\\d+,1,.+")) |> 
+  spread(
+    key = "parameter",
+    value = "estimate"
+  )
+```
+
+### Estimating evolving variance of latent traits
+
+Previous examples did not estimate evolving variance of latent traits, $\Delta^2$, fixed at 0.01 by default. 
+In `poEMirt()`, you can estimate it with `estimate_Delta = TRUE`. 
+
+```{r}
+# Fit the model
+fit3 <- poEMirt(
+  data = data,
+  model = "dynamic",
+  estimate_Delta = TRUE, # Estimate Delta or not
+  std_theta = TRUE,
+  control = list(
+    verbose = 10
+  )
+)
+
+# Delta
+fit3$parameter$Delta
 ```
 
 
@@ -166,16 +191,12 @@ Notably, `poEMirt` can also be applied to roll-call vote, individual-level surve
 
 Using the roll-call vote data of U.S. Supreme Court `Rehnquist` from [`{MCMCpack}`](https://github.com/cran/MCMCpack) by Martin, Quinn & Park (2011). The outcome of interest is 1 if a judge votes yea and 0 if nay.
 
-```{r}
+```{r, ussupremecourt}
 data(Rehnquist, package = "MCMCpack")
-
+min_year <- min(Rehnquist$term)
 df <- Rehnquist |> 
   mutate(rcid = row_number()) |> 
   select(-term) |> 
-  mutate(
-    time = factor(time) |> 
-      as.integer()
-  ) |> 
   pivot_longer(
     cols = -c(time, rcid),
     names_to = "judge",
@@ -210,13 +231,23 @@ fit <- poEMirt(
   data = data,
   model = "dynamic",
   constraint = con,
-  theta_std = TRUE,
   control = list(
     verbose = 10
   )
 )
 
-summary(fit, parameter = "theta")
+summary(fit, parameter = "theta") |> 
+  mutate(
+    judge = str_remove_all(index, "\\[|\\]|,|\\d+"),
+    year = str_extract(index, "\\d+") |> 
+      as.integer(),
+    year = year + min_year - 1
+  ) |> 
+  select(judge, year, estimate) |> 
+  spread(
+    key = "judge",
+    value = "estimate"
+  ) 
 ```
 
 #### Categorical
@@ -271,7 +302,7 @@ fit <- poEMirt(
   data = data,
   model = "dynamic",
   constraint = con,
-  theta_std = TRUE, 
+  std_theta = TRUE,
   control = list(
     verbose = 10
   )
@@ -299,7 +330,6 @@ summary(fit, parameter = "theta") |>
 
 # References
 
-- Bailey, M. A. (2007). "Comparable preference estimates across time and institutions for the court, congress, and presidency". *American Journal of Political Science*, 51(3), 433-448.
 - Goplerud, M. (2019). "A Multinomial Framework for Ideal Point Estimation". *Political Analysis*, 27(1), 69-89.
 - Martin A.D., Quinn K.M. & Park J.H. (2011). "MCMCpack: Markov Chain Monte Carlo in R." *Journal of Statistical Software*, 42(9), 22.
 - Polson, N. G., Scott, J. G., & Windle, J. (2013). "Bayesian inference for logistic models using Pólya–Gamma latent variables". *Journal of the American statistical Association*, 108(504), 1339-1349.

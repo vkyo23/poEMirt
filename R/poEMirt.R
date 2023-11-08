@@ -4,8 +4,10 @@
 #' @param data An object of \code{poEMirtData} via \code{read_poEMirt()}. 
 #' @param model A string, one of "static" or "dynamic".
 #' @param constraint An integer scalar or vector (for dynamic model, the same length as the number of times), index of an individual i (the location of i) whose latent trait is always set positive.
-#' @param alpha_fix A bool, whether fixes alpha of same repeated items or not. Default is FALSE.
-#' @param theta_std A bool, whether standardizes theta or not. Default is FALSE
+#' @param fix_alpha A bool, whether fixes alpha of same repeated items or not. Default is FALSE.
+#' @param fix_beta A bool, whether fixes alpha of same repeated items or not. Default is FALSE.
+#' @param estimate_Delta A bool, whether estimate Delta from data. Default is FALSE.
+#' @param std_theta A bool, whether standardizes theta or not. Default is FALSE
 #' @param init A list, containing initial values (optional).
 #' \itemize{
 #'   \item \code{alpha} J x max(K)-1 matrix of alpha. Missing values must be 0.
@@ -20,7 +22,9 @@
 #'   \item \code{B0} A double or J x max(K)-1 matrix, prior variance of beta. Default is 1.
 #'   \item \code{m0} A double or I length vector, prior mean of theta_i0 for dynamic model. Default is 0. 
 #'   \item \code{C0} A double or I length vector, prior variance of theta_i0 for dynamic model. Default is 1.
-#'   \item \code{Delta} A double or I length vector, prior evolution variance of theta_it for dynamic model. Default is 0.01.
+#'   \item \code{Delta} A double of evolution variance of theta_it for dynamic model. Default is 0.01.
+#'   \item \code{g0} A double. Prior of the 1st scale parameter of inverse gamma (IG(g0/2, h0/2)) for Delta. Default is 1. 
+#'   \item \code{h0} A double. Prior of the 2nd scale parameter of inverse gamma (IG(g0/2, h0/2)) for Delta. Default is 1. 
 #' }
 #' @param control A list of model controls.
 #' \itemize{
@@ -73,8 +77,10 @@
 poEMirt <- function(data, 
                     model = c("static", "dynamic"), 
                     constraint = NULL,
-                    alpha_fix = FALSE,
-                    theta_std = FALSE,
+                    fix_alpha = FALSE,
+                    fix_beta = FALSE,
+                    estimate_Delta = FALSE,
+                    std_theta = FALSE,
                     init = NULL, 
                     priors = NULL, 
                     control = NULL) 
@@ -98,9 +104,9 @@ poEMirt <- function(data,
   }
   unq_cat <- data$categories
   
-  if (alpha_fix) {
+  if (fix_alpha) {
     if (!exists("rep", data)) {
-      stop("Cannot detect repeated items. Try `alpha_fix = FALSE` or make sure your j in `read_poEMirt()`.")
+      stop("Cannot detect repeated items. Try `fix_alpha = FALSE` or make sure your j in `read_poEMirt()`.")
     } else {
       uJ_J <- data$rep$processed
     }
@@ -120,7 +126,9 @@ poEMirt <- function(data,
     if (model == "dynamic") {
       priors$m0 <- rep(0, I)
       priors$C0 <- rep(1, I)
-      priors$Delta <- rep(0.01, I)
+      priors$Delta <- 0.01
+      priors$g0 <- 1
+      priors$h0 <- 1
     }
     cat("DONE!\n")
   } else {
@@ -180,13 +188,25 @@ poEMirt <- function(data,
         priors$C0 <- rep(1, I)
       }
       if (exists("Delta", priors)) {
-        if (length(priors$Delta) == 1) {
-          priors$Delta <- rep(priors$Delta, I)
-        } else if (length(priors$Delta) != I) {
-          stop("`priors$Delta` must be must be a scalar or I-length vector.")
+        if (length(priors$Delta) != 1) {
+          priors$Delta <- priors$Delta[1]
         }
       } else {
-        priors$Delta <- rep(0.01, I)
+        priors$Delta <- 1
+      }
+      if (exists("g0", priors)) {
+        if (length(priors$g0) != 1) {
+          priors$g0 <- priors$g0[1]
+        }
+      } else {
+        priors$g0 <- 1
+      }
+      if (exists("h0", priors)) {
+        if (length(priors$h0) != 1) {
+          priors$h0 <- priors$h0[1]
+        }
+      } else {
+        priors$h0 <- 1
       }
     } 
   }
@@ -249,6 +269,7 @@ poEMirt <- function(data,
       alpha_old = init$alpha, 
       beta_old = init$beta, 
       theta_old = init$theta, 
+      Delta = priors$Delta,
       unique_categories = data$categories, 
       uJ_J = uJ_J, 
       timemap2 = data$dynamic$timemap2, 
@@ -261,10 +282,13 @@ poEMirt <- function(data,
       B0 = priors$B0, 
       m0 = priors$m0, 
       C0 = priors$C0, 
-      Delta = priors$Delta, 
+      g0 = priors$g0,
+      h0 = priors$h0,
       constraint = constraint - 1, 
-      alpha_fix = alpha_fix, 
-      std = theta_std, 
+      fix_alpha = fix_alpha, 
+      fix_beta = fix_beta,
+      estimate_Delta = estimate_Delta,
+      std = std_theta, 
       maxit = control$maxit, 
       verbose = verb, 
       tol = control$tol, 
@@ -284,7 +308,7 @@ poEMirt <- function(data,
       b0 = priors$b0, 
       B0 = priors$B0, 
       constraint = constraint - 1, 
-      std = theta_std, 
+      std = std_theta, 
       maxit = control$maxit, 
       verbose = verb, 
       tol = control$tol, 
@@ -326,14 +350,19 @@ poEMirt <- function(data,
       data = data, 
       model = model, 
       constraint = constraint,
-      alpha_fix = alpha_fix,
-      theta_std = theta_std,
+      fix_alpha = fix_alpha,
+      fix_beta = fix_beta,
+      estimate_Delta = estimate_Delta,
+      std_theta = std_theta,
       init = init, 
       priors = priors, 
       control = control
     )
   )
   if (!control$compute_ll) L$log_likelihood <- NULL
+  if (model == "dynamic") {
+    L$parameter$Delta <- fit$Delta
+  }
   L$call <- match.call()
   L$time <- list(
     date = date(),

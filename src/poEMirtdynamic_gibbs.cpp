@@ -7,6 +7,7 @@ poEMirtdynamic_gibbs::poEMirtdynamic_gibbs(const cube &Y,
                                            mat alpha,
                                            mat beta,
                                            mat theta,
+                                           double Delta,
                                            const std::vector<vec> &unique_categories,
                                            const std::vector<vec> &uJ_J,
                                            const mat &timemap2,
@@ -19,11 +20,14 @@ poEMirtdynamic_gibbs::poEMirtdynamic_gibbs(const cube &Y,
                                            const mat &B0,
                                            const vec &m0,
                                            const vec &C0,
-                                           const vec &Delta,
-                                           const bool &alpha_fix,
-                                           const bool &PG_approx,
+                                           const double &g0,
+                                           const double &h0,
                                            const vec &constraint,
+                                           const bool &fix_alpha,
+                                           const bool &fix_beta,
+                                           const bool &estimate_Delta,
                                            const bool &std,
+                                           const bool &PG_approx,
                                            const int &iter,
                                            const int &warmup,
                                            const int &thin,
@@ -37,6 +41,7 @@ poEMirtdynamic_gibbs::poEMirtdynamic_gibbs(const cube &Y,
   alpha(alpha),
   beta(beta),
   theta(theta),
+  Delta(Delta),
   unique_categories(unique_categories),
   uJ_J(uJ_J),
   timemap2(timemap2),
@@ -49,11 +54,14 @@ poEMirtdynamic_gibbs::poEMirtdynamic_gibbs(const cube &Y,
   B0(B0),
   m0(m0),
   C0(C0),
-  Delta(Delta),
-  alpha_fix(alpha_fix),
-  PG_approx(PG_approx),
+  g0(g0),
+  h0(h0),
   constraint(constraint),
+  fix_alpha(fix_alpha),
+  fix_beta(fix_beta),
+  estimate_Delta(estimate_Delta),
   std(std),
+  PG_approx(PG_approx),
   iter(iter),
   warmup(warmup),
   thin(thin),
@@ -128,10 +136,10 @@ void poEMirtdynamic_gibbs::draw_theta()
       uvec Jts = ITJ[i][t];
       if (t == 0) {
         a[0] = m0[i];
-        R[0] = C0[i] + Delta[i];
+        R[0] = C0[i] + Delta;
       } else {
         a[t] = m[t-1];
-        R[t] = C[t-1] + Delta[i];
+        R[t] = C[t-1] + Delta;
       }
       if (timemap2(i, t_i) != 0) { // for smoothing
         mat sbc_iJts = sbc_i.rows(Jts);
@@ -188,6 +196,23 @@ void poEMirtdynamic_gibbs::draw_theta()
   }
 }
 
+void poEMirtdynamic_gibbs::draw_Delta()
+{
+  double tmp = 0.0;
+  double tmp2 = 0.0;
+  for (int i = 0; i < I; i++) {
+    uvec times_i = IT[i];
+    int T_i = times_i.size();
+    tmp2 += (double)T_i - 1;
+    for (int t = 1; t < T_i; t++) {
+      tmp += std::pow(theta(i, times_i[t]) - theta(i, times_i[t-1]), 2.0);
+    }
+  }
+  double par1 = (g0 + tmp2) / 2.0;
+  double par2 = (h0 + tmp) / 2.0;
+  Delta = 1.0 / rgamma(par1, par2);
+}
+
 void poEMirtdynamic_gibbs::draw_beta()
 {
   for (int j = 0; j < J; j++) {
@@ -206,6 +231,43 @@ void poEMirtdynamic_gibbs::draw_beta()
       sig_part += 1 / B0(j, unq[k]);
       mu_part += b0(j, unq[k]) / B0(j, unq[k]);
       beta(j, unq[k]) = R::rnorm(mu_part / sig_part, std::sqrt(1.0 / sig_part));
+    }
+  }
+}
+
+void poEMirtdynamic_gibbs::draw_beta_fixed()
+{
+  for (unsigned int uj = 0; uj < uJ_J.size(); uj++) {
+    rowvec sig(K);
+    rowvec mu(K);
+    vec Juj = uJ_J[uj];
+    for (unsigned int jj = 0; jj < Juj.size(); jj++) {
+      int j = Juj[jj];
+      vec unq = unique_categories[j];
+      for (unsigned int k = 0; k < (unq.size()-1); k++) {
+        for (int i = 0; i < I; i++) {
+          if (!NumericVector::is_na(Y(i, j, unq[k]))) {
+            if (Nks(i, j, unq[k]) > 0) {
+              sig[unq[k]] += Omega(i, j, unq[k]) * std::pow(theta(i, item_timemap[j]), 2.0);
+              mu[unq[k]] += theta(i, item_timemap[j]) * (S(i, j, unq[k]) - Omega(i, j, unq[k]) * alpha(j, unq[k]));
+            }
+          }
+        }
+        sig[unq[k]] += 1.0 / B0(j, unq[k]);
+        mu[unq[k]] += b0(j, unq[k]) / B0(j, unq[k]); 
+      }
+    }
+    
+    uvec non0 = find(sig != 0);
+    rowvec draw(K);
+    for (unsigned int jj = 0; jj < Juj.size(); jj++) {
+      int j = Juj[jj];
+      if (jj == 0) {
+        for (unsigned int k = 0; k < non0.size(); k++) {
+          draw[non0[k]] = R::rnorm(mu[non0[k]] / sig[non0[k]], std::sqrt(1.0 / sig[non0[k]]));
+        }
+      }
+      beta.row(j) = draw;
     }
   }
 }
@@ -259,8 +321,8 @@ void poEMirtdynamic_gibbs::draw_alpha_fixed()
     rowvec draw(K);
     for (unsigned int jj = 0; jj < Juj.size(); jj++) {
       int j = Juj[jj];
-      for (unsigned int k = 0; k < non0.size(); k++) {
-        if (jj == 0) {
+      if (jj == 0) {
+        for (unsigned int k = 0; k < non0.size(); k++) {
           draw[non0[k]] = R::rnorm(mu[non0[k]] / sig[non0[k]], std::sqrt(1.0 / sig[non0[k]]));
         }
       }
@@ -278,8 +340,15 @@ void poEMirtdynamic_gibbs::fit()
       checkUserInterrupt();
       draw_Omega();
       draw_theta();
-      draw_beta();
-      if (alpha_fix) {
+      if (estimate_Delta) {
+        draw_Delta();
+      }
+      if (fix_beta) {
+        draw_beta_fixed();
+      } else {
+        draw_beta();
+      }
+      if (fix_alpha) {
         draw_alpha_fixed();
       } else {
         draw_alpha();
@@ -294,8 +363,15 @@ void poEMirtdynamic_gibbs::fit()
     checkUserInterrupt();
     draw_Omega();
     draw_theta();
-    draw_beta();
-    if (alpha_fix) {
+    if (estimate_Delta) {
+      draw_Delta();
+    }
+    if (fix_beta) {
+      draw_beta_fixed();
+    } else {
+      draw_beta();
+    }
+    if (fix_alpha) {
       draw_alpha_fixed();
     } else {
       draw_alpha();
@@ -303,6 +379,9 @@ void poEMirtdynamic_gibbs::fit()
     
     if (g % thin == 0) {
       theta_store.push_back(theta);
+      if (estimate_Delta) {
+        Delta_store.push_back(Delta);
+      }
       if (save_item_parameters) {
         beta_store.push_back(beta);
         alpha_store.push_back(alpha);
@@ -317,7 +396,8 @@ void poEMirtdynamic_gibbs::fit()
   modeloutput = List::create(
     Named("alpha") = alpha_store,
     Named("beta") = beta_store,
-    Named("theta") = theta_store
+    Named("theta") = theta_store,
+    Named("Delta") = Delta_store
   );
 }
 
@@ -334,6 +414,7 @@ List poEMirtdynamic_gibbs_fit(const arma::cube &Y,
                               arma::mat alpha,
                               arma::mat beta,
                               arma::mat theta,
+                              double Delta,
                               const std::vector<arma::vec> &unique_categories,
                               const std::vector<arma::vec> &uJ_J,
                               const arma::mat &timemap2,
@@ -346,11 +427,14 @@ List poEMirtdynamic_gibbs_fit(const arma::cube &Y,
                               const arma::mat &B0,
                               const arma::vec &m0,
                               const arma::vec &C0,
-                              const arma::vec &Delta,
-                              const bool &alpha_fix,
-                              const bool &PG_approx,
+                              const double &g0,
+                              const double &h0,
                               const arma::vec &constraint,
+                              const bool &fix_alpha,
+                              const bool &fix_beta,
+                              const bool &estimate_Delta,
                               const bool &std,
+                              const bool &PG_approx,
                               const int &iter,
                               const int &warmup,
                               const int &thin,
@@ -365,6 +449,7 @@ List poEMirtdynamic_gibbs_fit(const arma::cube &Y,
                              alpha,
                              beta,
                              theta,
+                             Delta,
                              unique_categories,
                              uJ_J,
                              timemap2,
@@ -377,11 +462,14 @@ List poEMirtdynamic_gibbs_fit(const arma::cube &Y,
                              B0,
                              m0,
                              C0,
-                             Delta,
-                             alpha_fix,
-                             PG_approx,
+                             g0,
+                             h0,
                              constraint,
+                             fix_alpha,
+                             fix_beta,
+                             estimate_Delta,
                              std,
+                             PG_approx,
                              iter,
                              warmup,
                              thin,

@@ -3,6 +3,53 @@
 #include <Rcpp.h>
 using namespace Rcpp;
 
+double sample_gamma(double alpha)
+{
+  int check;
+  double out;
+  double u, v, w, x, y, z, b, c;
+  
+  b = alpha - 1;
+  c = 3 * alpha - 0.75;
+  check = 0;
+  while (check == 0) {
+    u = R::runif(0.0, 1.0);
+    v = R::runif(0.0, 1.0);
+    w = u * (1 - u);
+    y = std::sqrt(c / w) * (u - 0.5);
+    x = b + y;
+    if (x > 0) {
+      z = 64 * std::pow(v, 2) * std::pow(w, 3);
+      if (z <= (1 - (2 * std::pow (y, 2) / x))) {
+        check = 1;
+        out = x;
+      } else if ((2 * (b * std::log(x / b) - y)) >= std::log(z)) {
+        check = 1;
+        out = x;
+      } else {
+        check = 0;
+      }
+    }
+  }
+  
+  return out;
+}
+
+double rgamma(double shape, 
+              double rate)
+{
+  double out;
+  
+  if (shape > 1) {
+    out = sample_gamma(shape) / rate;
+  } else if (shape == 1) {
+    out = -std::log(R::runif(0.0, 1.0)) / rate;
+  } else {
+    out = sample_gamma(shape + 1) * std::pow(R::runif(0.0, 1.0), 1 / shape) / rate;
+  }
+  return out;
+}
+
 arma::vec rmultinom2(int &size, 
                      arma::vec &prob) 
 {

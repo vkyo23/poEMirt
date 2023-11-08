@@ -68,8 +68,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // poEMirtdynamic_fit
-List poEMirtdynamic_fit(const arma::cube& Y, const arma::cube& S, const arma::cube& Nks, arma::mat alpha_old, arma::mat beta_old, arma::mat theta_old, const std::vector<arma::vec>& unique_categories, const std::vector<arma::vec>& uJ_J, const arma::mat& timemap2, const arma::vec& item_timemap, const std::vector<arma::uvec>& IT, const std::vector<std::vector<arma::uvec>>& ITJ, const arma::mat& a0, const arma::mat& A0, const arma::mat& b0, const arma::mat& B0, const arma::vec& m0, const arma::vec& C0, const arma::vec& Delta, const arma::vec& constraint, const bool& alpha_fix, const bool& std, const int& maxit, const int& verbose, const double& tol, const bool& compute_ll);
-RcppExport SEXP _poEMirt_poEMirtdynamic_fit(SEXP YSEXP, SEXP SSEXP, SEXP NksSEXP, SEXP alpha_oldSEXP, SEXP beta_oldSEXP, SEXP theta_oldSEXP, SEXP unique_categoriesSEXP, SEXP uJ_JSEXP, SEXP timemap2SEXP, SEXP item_timemapSEXP, SEXP ITSEXP, SEXP ITJSEXP, SEXP a0SEXP, SEXP A0SEXP, SEXP b0SEXP, SEXP B0SEXP, SEXP m0SEXP, SEXP C0SEXP, SEXP DeltaSEXP, SEXP constraintSEXP, SEXP alpha_fixSEXP, SEXP stdSEXP, SEXP maxitSEXP, SEXP verboseSEXP, SEXP tolSEXP, SEXP compute_llSEXP) {
+List poEMirtdynamic_fit(const arma::cube& Y, const arma::cube& S, const arma::cube& Nks, arma::mat alpha_old, arma::mat beta_old, arma::mat theta_old, double Delta, const std::vector<arma::vec>& unique_categories, const std::vector<arma::vec>& uJ_J, const arma::mat& timemap2, const arma::vec& item_timemap, const std::vector<arma::uvec>& IT, const std::vector<std::vector<arma::uvec>>& ITJ, const arma::mat& a0, const arma::mat& A0, const arma::mat& b0, const arma::mat& B0, const arma::vec& m0, const arma::vec& C0, const double& g0, const double& h0, const arma::vec& constraint, const bool& fix_alpha, const bool& fix_beta, const bool& estimate_Delta, const bool& std, const int& maxit, const int& verbose, const double& tol, const bool& compute_ll);
+RcppExport SEXP _poEMirt_poEMirtdynamic_fit(SEXP YSEXP, SEXP SSEXP, SEXP NksSEXP, SEXP alpha_oldSEXP, SEXP beta_oldSEXP, SEXP theta_oldSEXP, SEXP DeltaSEXP, SEXP unique_categoriesSEXP, SEXP uJ_JSEXP, SEXP timemap2SEXP, SEXP item_timemapSEXP, SEXP ITSEXP, SEXP ITJSEXP, SEXP a0SEXP, SEXP A0SEXP, SEXP b0SEXP, SEXP B0SEXP, SEXP m0SEXP, SEXP C0SEXP, SEXP g0SEXP, SEXP h0SEXP, SEXP constraintSEXP, SEXP fix_alphaSEXP, SEXP fix_betaSEXP, SEXP estimate_DeltaSEXP, SEXP stdSEXP, SEXP maxitSEXP, SEXP verboseSEXP, SEXP tolSEXP, SEXP compute_llSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -79,6 +79,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::mat >::type alpha_old(alpha_oldSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type beta_old(beta_oldSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type theta_old(theta_oldSEXP);
+    Rcpp::traits::input_parameter< double >::type Delta(DeltaSEXP);
     Rcpp::traits::input_parameter< const std::vector<arma::vec>& >::type unique_categories(unique_categoriesSEXP);
     Rcpp::traits::input_parameter< const std::vector<arma::vec>& >::type uJ_J(uJ_JSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type timemap2(timemap2SEXP);
@@ -91,21 +92,24 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const arma::mat& >::type B0(B0SEXP);
     Rcpp::traits::input_parameter< const arma::vec& >::type m0(m0SEXP);
     Rcpp::traits::input_parameter< const arma::vec& >::type C0(C0SEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type Delta(DeltaSEXP);
+    Rcpp::traits::input_parameter< const double& >::type g0(g0SEXP);
+    Rcpp::traits::input_parameter< const double& >::type h0(h0SEXP);
     Rcpp::traits::input_parameter< const arma::vec& >::type constraint(constraintSEXP);
-    Rcpp::traits::input_parameter< const bool& >::type alpha_fix(alpha_fixSEXP);
+    Rcpp::traits::input_parameter< const bool& >::type fix_alpha(fix_alphaSEXP);
+    Rcpp::traits::input_parameter< const bool& >::type fix_beta(fix_betaSEXP);
+    Rcpp::traits::input_parameter< const bool& >::type estimate_Delta(estimate_DeltaSEXP);
     Rcpp::traits::input_parameter< const bool& >::type std(stdSEXP);
     Rcpp::traits::input_parameter< const int& >::type maxit(maxitSEXP);
     Rcpp::traits::input_parameter< const int& >::type verbose(verboseSEXP);
     Rcpp::traits::input_parameter< const double& >::type tol(tolSEXP);
     Rcpp::traits::input_parameter< const bool& >::type compute_ll(compute_llSEXP);
-    rcpp_result_gen = Rcpp::wrap(poEMirtdynamic_fit(Y, S, Nks, alpha_old, beta_old, theta_old, unique_categories, uJ_J, timemap2, item_timemap, IT, ITJ, a0, A0, b0, B0, m0, C0, Delta, constraint, alpha_fix, std, maxit, verbose, tol, compute_ll));
+    rcpp_result_gen = Rcpp::wrap(poEMirtdynamic_fit(Y, S, Nks, alpha_old, beta_old, theta_old, Delta, unique_categories, uJ_J, timemap2, item_timemap, IT, ITJ, a0, A0, b0, B0, m0, C0, g0, h0, constraint, fix_alpha, fix_beta, estimate_Delta, std, maxit, verbose, tol, compute_ll));
     return rcpp_result_gen;
 END_RCPP
 }
 // poEMirtdynamic_gibbs_fit
-List poEMirtdynamic_gibbs_fit(const arma::cube& Y, const arma::cube& S, const arma::cube& Nks, const arma::cube& sb_check, arma::mat alpha, arma::mat beta, arma::mat theta, const std::vector<arma::vec>& unique_categories, const std::vector<arma::vec>& uJ_J, const arma::mat& timemap2, const arma::vec& item_timemap, const std::vector<arma::uvec>& IT, const std::vector<std::vector<arma::uvec>>& ITJ, const arma::mat& a0, const arma::mat& A0, const arma::mat& b0, const arma::mat& B0, const arma::vec& m0, const arma::vec& C0, const arma::vec& Delta, const bool& alpha_fix, const bool& PG_approx, const arma::vec& constraint, const bool& std, const int& iter, const int& warmup, const int& thin, const bool& save_item_parameters, const int& verbose);
-RcppExport SEXP _poEMirt_poEMirtdynamic_gibbs_fit(SEXP YSEXP, SEXP SSEXP, SEXP NksSEXP, SEXP sb_checkSEXP, SEXP alphaSEXP, SEXP betaSEXP, SEXP thetaSEXP, SEXP unique_categoriesSEXP, SEXP uJ_JSEXP, SEXP timemap2SEXP, SEXP item_timemapSEXP, SEXP ITSEXP, SEXP ITJSEXP, SEXP a0SEXP, SEXP A0SEXP, SEXP b0SEXP, SEXP B0SEXP, SEXP m0SEXP, SEXP C0SEXP, SEXP DeltaSEXP, SEXP alpha_fixSEXP, SEXP PG_approxSEXP, SEXP constraintSEXP, SEXP stdSEXP, SEXP iterSEXP, SEXP warmupSEXP, SEXP thinSEXP, SEXP save_item_parametersSEXP, SEXP verboseSEXP) {
+List poEMirtdynamic_gibbs_fit(const arma::cube& Y, const arma::cube& S, const arma::cube& Nks, const arma::cube& sb_check, arma::mat alpha, arma::mat beta, arma::mat theta, double Delta, const std::vector<arma::vec>& unique_categories, const std::vector<arma::vec>& uJ_J, const arma::mat& timemap2, const arma::vec& item_timemap, const std::vector<arma::uvec>& IT, const std::vector<std::vector<arma::uvec>>& ITJ, const arma::mat& a0, const arma::mat& A0, const arma::mat& b0, const arma::mat& B0, const arma::vec& m0, const arma::vec& C0, const double& g0, const double& h0, const arma::vec& constraint, const bool& fix_alpha, const bool& fix_beta, const bool& estimate_Delta, const bool& std, const bool& PG_approx, const int& iter, const int& warmup, const int& thin, const bool& save_item_parameters, const int& verbose);
+RcppExport SEXP _poEMirt_poEMirtdynamic_gibbs_fit(SEXP YSEXP, SEXP SSEXP, SEXP NksSEXP, SEXP sb_checkSEXP, SEXP alphaSEXP, SEXP betaSEXP, SEXP thetaSEXP, SEXP DeltaSEXP, SEXP unique_categoriesSEXP, SEXP uJ_JSEXP, SEXP timemap2SEXP, SEXP item_timemapSEXP, SEXP ITSEXP, SEXP ITJSEXP, SEXP a0SEXP, SEXP A0SEXP, SEXP b0SEXP, SEXP B0SEXP, SEXP m0SEXP, SEXP C0SEXP, SEXP g0SEXP, SEXP h0SEXP, SEXP constraintSEXP, SEXP fix_alphaSEXP, SEXP fix_betaSEXP, SEXP estimate_DeltaSEXP, SEXP stdSEXP, SEXP PG_approxSEXP, SEXP iterSEXP, SEXP warmupSEXP, SEXP thinSEXP, SEXP save_item_parametersSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -116,6 +120,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::mat >::type alpha(alphaSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type beta(betaSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type theta(thetaSEXP);
+    Rcpp::traits::input_parameter< double >::type Delta(DeltaSEXP);
     Rcpp::traits::input_parameter< const std::vector<arma::vec>& >::type unique_categories(unique_categoriesSEXP);
     Rcpp::traits::input_parameter< const std::vector<arma::vec>& >::type uJ_J(uJ_JSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type timemap2(timemap2SEXP);
@@ -128,17 +133,20 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const arma::mat& >::type B0(B0SEXP);
     Rcpp::traits::input_parameter< const arma::vec& >::type m0(m0SEXP);
     Rcpp::traits::input_parameter< const arma::vec& >::type C0(C0SEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type Delta(DeltaSEXP);
-    Rcpp::traits::input_parameter< const bool& >::type alpha_fix(alpha_fixSEXP);
-    Rcpp::traits::input_parameter< const bool& >::type PG_approx(PG_approxSEXP);
+    Rcpp::traits::input_parameter< const double& >::type g0(g0SEXP);
+    Rcpp::traits::input_parameter< const double& >::type h0(h0SEXP);
     Rcpp::traits::input_parameter< const arma::vec& >::type constraint(constraintSEXP);
+    Rcpp::traits::input_parameter< const bool& >::type fix_alpha(fix_alphaSEXP);
+    Rcpp::traits::input_parameter< const bool& >::type fix_beta(fix_betaSEXP);
+    Rcpp::traits::input_parameter< const bool& >::type estimate_Delta(estimate_DeltaSEXP);
     Rcpp::traits::input_parameter< const bool& >::type std(stdSEXP);
+    Rcpp::traits::input_parameter< const bool& >::type PG_approx(PG_approxSEXP);
     Rcpp::traits::input_parameter< const int& >::type iter(iterSEXP);
     Rcpp::traits::input_parameter< const int& >::type warmup(warmupSEXP);
     Rcpp::traits::input_parameter< const int& >::type thin(thinSEXP);
     Rcpp::traits::input_parameter< const bool& >::type save_item_parameters(save_item_parametersSEXP);
     Rcpp::traits::input_parameter< const int& >::type verbose(verboseSEXP);
-    rcpp_result_gen = Rcpp::wrap(poEMirtdynamic_gibbs_fit(Y, S, Nks, sb_check, alpha, beta, theta, unique_categories, uJ_J, timemap2, item_timemap, IT, ITJ, a0, A0, b0, B0, m0, C0, Delta, alpha_fix, PG_approx, constraint, std, iter, warmup, thin, save_item_parameters, verbose));
+    rcpp_result_gen = Rcpp::wrap(poEMirtdynamic_gibbs_fit(Y, S, Nks, sb_check, alpha, beta, theta, Delta, unique_categories, uJ_J, timemap2, item_timemap, IT, ITJ, a0, A0, b0, B0, m0, C0, g0, h0, constraint, fix_alpha, fix_beta, estimate_Delta, std, PG_approx, iter, warmup, thin, save_item_parameters, verbose));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -191,8 +199,8 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_poEMirt_poEMirtbase_fit", (DL_FUNC) &_poEMirt_poEMirtbase_fit, 17},
     {"_poEMirt_poEMirtbase_gibbs_fit", (DL_FUNC) &_poEMirt_poEMirtbase_gibbs_fit, 19},
-    {"_poEMirt_poEMirtdynamic_fit", (DL_FUNC) &_poEMirt_poEMirtdynamic_fit, 26},
-    {"_poEMirt_poEMirtdynamic_gibbs_fit", (DL_FUNC) &_poEMirt_poEMirtdynamic_gibbs_fit, 29},
+    {"_poEMirt_poEMirtdynamic_fit", (DL_FUNC) &_poEMirt_poEMirtdynamic_fit, 30},
+    {"_poEMirt_poEMirtdynamic_gibbs_fit", (DL_FUNC) &_poEMirt_poEMirtdynamic_gibbs_fit, 33},
     {"_poEMirt_construct_sb_auxs", (DL_FUNC) &_poEMirt_construct_sb_auxs, 3},
     {"_poEMirt_get_dynamic_info", (DL_FUNC) &_poEMirt_get_dynamic_info, 3},
     {"_poEMirt_prediction", (DL_FUNC) &_poEMirt_prediction, 9},

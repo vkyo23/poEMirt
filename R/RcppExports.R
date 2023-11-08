@@ -9,12 +9,12 @@ poEMirtbase_gibbs_fit <- function(Y, S, Nks, alpha, beta, theta, unique_categori
     .Call(`_poEMirt_poEMirtbase_gibbs_fit`, Y, S, Nks, alpha, beta, theta, unique_categories, a0, A0, b0, B0, PG_approx, constraint, std, iter, warmup, thin, save_item_parameters, verbose)
 }
 
-poEMirtdynamic_fit <- function(Y, S, Nks, alpha_old, beta_old, theta_old, unique_categories, uJ_J, timemap2, item_timemap, IT, ITJ, a0, A0, b0, B0, m0, C0, Delta, constraint, alpha_fix, std, maxit, verbose, tol, compute_ll) {
-    .Call(`_poEMirt_poEMirtdynamic_fit`, Y, S, Nks, alpha_old, beta_old, theta_old, unique_categories, uJ_J, timemap2, item_timemap, IT, ITJ, a0, A0, b0, B0, m0, C0, Delta, constraint, alpha_fix, std, maxit, verbose, tol, compute_ll)
+poEMirtdynamic_fit <- function(Y, S, Nks, alpha_old, beta_old, theta_old, Delta, unique_categories, uJ_J, timemap2, item_timemap, IT, ITJ, a0, A0, b0, B0, m0, C0, g0, h0, constraint, fix_alpha, fix_beta, estimate_Delta, std, maxit, verbose, tol, compute_ll) {
+    .Call(`_poEMirt_poEMirtdynamic_fit`, Y, S, Nks, alpha_old, beta_old, theta_old, Delta, unique_categories, uJ_J, timemap2, item_timemap, IT, ITJ, a0, A0, b0, B0, m0, C0, g0, h0, constraint, fix_alpha, fix_beta, estimate_Delta, std, maxit, verbose, tol, compute_ll)
 }
 
-poEMirtdynamic_gibbs_fit <- function(Y, S, Nks, sb_check, alpha, beta, theta, unique_categories, uJ_J, timemap2, item_timemap, IT, ITJ, a0, A0, b0, B0, m0, C0, Delta, alpha_fix, PG_approx, constraint, std, iter, warmup, thin, save_item_parameters, verbose) {
-    .Call(`_poEMirt_poEMirtdynamic_gibbs_fit`, Y, S, Nks, sb_check, alpha, beta, theta, unique_categories, uJ_J, timemap2, item_timemap, IT, ITJ, a0, A0, b0, B0, m0, C0, Delta, alpha_fix, PG_approx, constraint, std, iter, warmup, thin, save_item_parameters, verbose)
+poEMirtdynamic_gibbs_fit <- function(Y, S, Nks, sb_check, alpha, beta, theta, Delta, unique_categories, uJ_J, timemap2, item_timemap, IT, ITJ, a0, A0, b0, B0, m0, C0, g0, h0, constraint, fix_alpha, fix_beta, estimate_Delta, std, PG_approx, iter, warmup, thin, save_item_parameters, verbose) {
+    .Call(`_poEMirt_poEMirtdynamic_gibbs_fit`, Y, S, Nks, sb_check, alpha, beta, theta, Delta, unique_categories, uJ_J, timemap2, item_timemap, IT, ITJ, a0, A0, b0, B0, m0, C0, g0, h0, constraint, fix_alpha, fix_beta, estimate_Delta, std, PG_approx, iter, warmup, thin, save_item_parameters, verbose)
 }
 
 construct_sb_auxs <- function(Y, N, unique_categories) {

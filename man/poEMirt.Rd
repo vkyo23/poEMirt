@@ -8,8 +8,10 @@ poEMirt(
   data,
   model = c("static", "dynamic"),
   constraint = NULL,
-  alpha_fix = FALSE,
-  theta_std = FALSE,
+  fix_alpha = FALSE,
+  fix_beta = FALSE,
+  estimate_Delta = FALSE,
+  std_theta = FALSE,
   init = NULL,
   priors = NULL,
   control = NULL
@@ -22,9 +24,13 @@ poEMirt(
 
 \item{constraint}{An integer scalar or vector (for dynamic model, the same length as the number of times), index of an individual i (the location of i) whose latent trait is always set positive.}
 
-\item{alpha_fix}{A bool, whether fixes alpha of same repeated items or not. Default is FALSE.}
+\item{fix_alpha}{A bool, whether fixes alpha of same repeated items or not. Default is FALSE.}
 
-\item{theta_std}{A bool, whether standardizes theta or not. Default is FALSE}
+\item{fix_beta}{A bool, whether fixes alpha of same repeated items or not. Default is FALSE.}
+
+\item{estimate_Delta}{A bool, whether estimate Delta from data. Default is FALSE.}
+
+\item{std_theta}{A bool, whether standardizes theta or not. Default is FALSE}
 
 \item{init}{A list, containing initial values (optional).
 \itemize{
@@ -41,7 +47,9 @@ poEMirt(
   \item \code{B0} A double or J x max(K)-1 matrix, prior variance of beta. Default is 1.
   \item \code{m0} A double or I length vector, prior mean of theta_i0 for dynamic model. Default is 0. 
   \item \code{C0} A double or I length vector, prior variance of theta_i0 for dynamic model. Default is 1.
-  \item \code{Delta} A double or I length vector, prior evolution variance of theta_it for dynamic model. Default is 0.01.
+  \item \code{Delta} A double of evolution variance of theta_it for dynamic model. Default is 0.01.
+  \item \code{g0} A double. Prior of the 1st scale parameter of inverse gamma (IG(g0/2, h0/2)) for Delta. Default is 1. 
+  \item \code{h0} A double. Prior of the 2nd scale parameter of inverse gamma (IG(g0/2, h0/2)) for Delta. Default is 1. 
 }}
 
 \item{control}{A list of model controls.

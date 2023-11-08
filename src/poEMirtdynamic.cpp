@@ -6,6 +6,7 @@ poEMirtdynamic::poEMirtdynamic(const cube &Y,
                                mat alpha_old,
                                mat beta_old,
                                mat theta_old,
+                               double Delta,
                                const std::vector<vec> &unique_categories,
                                const std::vector<vec> &uJ_J,
                                const mat &timemap2,
@@ -18,9 +19,12 @@ poEMirtdynamic::poEMirtdynamic(const cube &Y,
                                const mat &B0,
                                const vec &m0,
                                const vec &C0,
-                               const vec &Delta,
+                               const double &g0,
+                               const double &h0,
                                const vec &constraint,
-                               const bool &alpha_fix,
+                               const bool &fix_alpha,
+                               const bool &fix_beta,
+                               const bool &estimate_Delta,
                                const bool &std,
                                const int &maxit,
                                const int &verbose,
@@ -33,6 +37,7 @@ poEMirtdynamic::poEMirtdynamic(const cube &Y,
   alpha_old(alpha_old),
   beta_old(beta_old),
   theta_old(theta_old),
+  Delta(Delta),
   unique_categories(unique_categories),
   uJ_J(uJ_J),
   timemap2(timemap2),
@@ -45,9 +50,12 @@ poEMirtdynamic::poEMirtdynamic(const cube &Y,
   B0(B0),
   m0(m0),
   C0(C0),
-  Delta(Delta),
-  alpha_fix(alpha_fix),
+  g0(g0),
+  h0(h0),
   constraint(constraint),
+  fix_alpha(fix_alpha),
+  fix_beta(fix_beta),
+  estimate_Delta(estimate_Delta),
   std(std),
   maxit(maxit),
   verbose(verbose),
@@ -149,23 +157,23 @@ mat poEMirtdynamic::update_theta()
         }
       }
       if (t == 0) {
-        double sig = sig_part + 1 / C0[i] + 1 / Delta[i];
+        double sig = sig_part + 1 / C0[i] + 1 / Delta;
         double mu = mu_part + m0[i] / C0[i];
         
         A(t, t) = sig;
-        A(t, t+1) = -1 / Delta[i];
-        A(t+1, t) = -1 / Delta[i];
+        A(t, t+1) = -1 / Delta;
+        A(t+1, t) = -1 / Delta;
         B(t) = mu;
       } else if (t != (T_i - 1)) {
-        double sig = sig_part + 2 / Delta[i] + 1;
+        double sig = sig_part + 2 / Delta + 1;
         double mu = mu_part;
         
         A(t, t) = sig;
-        A(t, t+1) = -1 / Delta[i];
-        A(t+1, t) = -1 / Delta[i];
+        A(t, t+1) = -1 / Delta;
+        A(t+1, t) = -1 / Delta;
         B(t) = mu;
       } else if (t == (T_i - 1)) {
-        double sig = sig_part + 1 / Delta[i] + 1;
+        double sig = sig_part + 1 / Delta + 1;
         double mu = mu_part;
         A(t, t) = sig;
         B(t) = mu;
@@ -200,6 +208,21 @@ mat poEMirtdynamic::update_theta()
   return draw;
 }
 
+void poEMirtdynamic::update_Delta()
+{
+  double tmp = 0.0;
+  double tmp2 = 0.0;
+  for (int i = 0; i < I; i++) {
+    uvec times_i = IT[i];
+    int T_i = times_i.size();
+    tmp2 += (double)T_i - 1;
+    for (int t = 1; t < T_i; t++) {
+      tmp += std::pow(theta(i, times_i[t]) - theta(i, times_i[t-1]), 2.0);
+    }
+  }
+  Delta = (h0 + tmp) / (tmp2 + g0 + 2.0);
+}
+
 mat poEMirtdynamic::update_beta()
 {
   mat draw(J, K);
@@ -219,6 +242,38 @@ mat poEMirtdynamic::update_beta()
       sig_part += 1 / B0(j, unq[k]);
       mu_part += b0(j, unq[k]) / B0(j, unq[k]);
       draw(j, unq[k]) = mu_part / sig_part;
+    }
+  }
+  return draw;
+}
+
+mat poEMirtdynamic::update_beta_fixed()
+{
+  mat draw(J, K);
+  for (unsigned int uj = 0; uj < uJ_J.size(); uj++) {
+    rowvec sig(K);
+    rowvec mu(K);
+    vec Juj = uJ_J[uj];
+    for (unsigned int jj = 0; jj < Juj.size(); jj++) {
+      int j = Juj[jj];
+      vec unq = unique_categories[j];
+      for (unsigned int k = 0; k < (unq.size()-1); k++) {
+        for (int i = 0; i < I; i++) {
+          if (!NumericVector::is_na(Y(i, j, unq[k]))) {
+            if (Nks(i, j, unq[k]) > 0) {
+              sig[unq[k]] += Omega(i, j, unq[k]) * std::pow(theta(i, item_timemap[j]), 2.0);
+              mu[unq[k]] += theta(i, item_timemap[j]) * (S(i, j, unq[k]) - Omega(i, j, unq[k]) * alpha_old(j, unq[k]));
+            }
+          }
+        }
+        sig[unq[k]] += 1.0 / B0(j, unq[k]);
+        mu[unq[k]] += b0(j, unq[k]) / B0(j, unq[k]); 
+      }
+    }
+    sig.elem(find(sig == 0)).ones();
+    for (unsigned int jj = 0; jj < Juj.size(); jj++) {
+      int j = Juj[jj];
+      draw.row(j) = mu / sig;
     }
   }
   return draw;
@@ -305,8 +360,15 @@ void poEMirtdynamic::fit()
     
     // Mstep
     theta = update_theta();
-    beta = update_beta();
-    if (alpha_fix) {
+    if (estimate_Delta) {
+      update_Delta();
+    }
+    if (fix_beta) {
+      beta = update_beta_fixed();
+    } else {
+      beta = update_beta();
+    }
+    if (fix_alpha) {
       alpha = update_alpha_fixed();
     } else {
       alpha = update_alpha();
@@ -339,6 +401,7 @@ void poEMirtdynamic::fit()
     Named("alpha") = alpha,
     Named("beta") = beta,
     Named("theta") = theta,
+    Named("Delta") = Delta,
     Named("iter") = iter,
     Named("conv") = convmat,
     Named("converge") = converge,
@@ -358,6 +421,7 @@ List poEMirtdynamic_fit(const arma::cube &Y,
                         arma::mat alpha_old,
                         arma::mat beta_old,
                         arma::mat theta_old,
+                        double Delta,
                         const std::vector<arma::vec> &unique_categories,
                         const std::vector<arma::vec> &uJ_J,
                         const arma::mat &timemap2,
@@ -370,9 +434,12 @@ List poEMirtdynamic_fit(const arma::cube &Y,
                         const arma::mat &B0,
                         const arma::vec &m0,
                         const arma::vec &C0,
-                        const arma::vec &Delta,
+                        const double &g0,
+                        const double &h0,
                         const arma::vec &constraint,
-                        const bool &alpha_fix,
+                        const bool &fix_alpha,
+                        const bool &fix_beta,
+                        const bool &estimate_Delta,
                         const bool &std,
                         const int &maxit,
                         const int &verbose,
@@ -386,6 +453,7 @@ List poEMirtdynamic_fit(const arma::cube &Y,
                        alpha_old,
                        beta_old,
                        theta_old,
+                       Delta,
                        unique_categories,
                        uJ_J,
                        timemap2,
@@ -398,9 +466,12 @@ List poEMirtdynamic_fit(const arma::cube &Y,
                        B0,
                        m0,
                        C0,
-                       Delta,
+                       g0,
+                       h0,
                        constraint,
-                       alpha_fix,
+                       fix_alpha,
+                       fix_beta,
+                       estimate_Delta,
                        std,
                        maxit,
                        verbose,

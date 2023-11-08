@@ -83,7 +83,7 @@ summary(data)
 fit <- poEMirt(
   data = data,
   model = "dynamic",
-  theta_std = TRUE, # Standardizing theta
+  std_theta = TRUE, # Standardizing theta
   control = list(
     verbose = 10
   )
@@ -114,16 +114,15 @@ summary(fit, parameter = "theta")
 #> # ℹ 7,571 more rows
 ```
 
-#### Repeated items and bridging estimation
+#### Repeated items
 
-Public opinion data typically contains repeated items over time. To
-strictly estimate the change in latent traits, one should do bridging
-estimation by pinning down the location of cutpoints (alpha) of repeated
-items (Baiely 2007). In the previous example, we saw that `j` is unique
-in terms of `t`, but in this example, simulated data below has repeated
-`j`. `read_poEMirt()` automatically detects such repeated items and
-creates a poEMirt-readable object. Users can do bridging estimation by
-setting `alpha_fix = TRUE` in `poEMirt()`.
+Public opinion data typically contains repeated items over time, and one
+may want to estimate repeated items’ parameters globally. Users can do
+such estimation by setting `fix_alpha = TRUE` and `fix_beta = TRUE` in
+`poEMirt()`. In the previous example, we saw that `j` is unique in terms
+of `t`, but in this example, simulated data below has repeated `j`.
+`read_poEMirt()` automatically detects such repeated items and creates a
+poEMirt-readable object.
 
 ``` r
 # Repeated item data
@@ -153,8 +152,58 @@ data2 <- read_poEMirt(
 fit2 <- poEMirt(
   data = data2,
   model = "dynamic",
-  theta_std = TRUE,
-  alpha_fix = TRUE, # Fix alpha or not
+  fix_alpha = TRUE, # Fix alpha or not
+  fix_beta = TRUE, # Fix beta or not
+  std_theta = TRUE,
+  control = list(
+    verbose = 10
+  )
+)
+#> === poEMirt starts! ===
+#> * Setting priors.....DONE!
+#> * Finding best initial values.....DONE!
+#> * Expectation-Maximization
+#>   - Iteration 10: eval = 0.000251984
+#>   - Iteration 20: eval = 4.24635e-06
+#> * Model converged at iteration 24 : 0.2 sec.
+
+# Same alpha and beta estimates!
+summary(fit2, parameter = c("alpha", "beta")) |> 
+  filter(str_detect(index, "\\[\\d+,1,.+")) |> 
+  spread(
+    key = "parameter",
+    value = "estimate"
+  )
+#> * Summarizing following parameters: alpha, beta
+#> # A tibble: 40 × 4
+#>    index     reference alpha  beta
+#>    <chr>     <chr>     <dbl> <dbl>
+#>  1 [1,1,y1]  [t,j,k]   0.183 0.405
+#>  2 [10,1,y1] [t,j,k]   0.183 0.405
+#>  3 [11,1,y1] [t,j,k]   0.183 0.405
+#>  4 [12,1,y1] [t,j,k]   0.183 0.405
+#>  5 [13,1,y1] [t,j,k]   0.183 0.405
+#>  6 [14,1,y1] [t,j,k]   0.183 0.405
+#>  7 [15,1,y1] [t,j,k]   0.183 0.405
+#>  8 [16,1,y1] [t,j,k]   0.183 0.405
+#>  9 [17,1,y1] [t,j,k]   0.183 0.405
+#> 10 [18,1,y1] [t,j,k]   0.183 0.405
+#> # ℹ 30 more rows
+```
+
+### Estimating evolving variance of latent traits
+
+Previous examples did not estimate evolving variance of latent traits,
+$\Delta^2$, fixed at 0.01 by default. In `poEMirt()`, you can estimate
+it with `estimate_Delta = TRUE`.
+
+``` r
+# Fit the model
+fit3 <- poEMirt(
+  data = data,
+  model = "dynamic",
+  estimate_Delta = TRUE, # Estimate Delta or not
+  std_theta = TRUE,
   control = list(
     verbose = 10
   )
@@ -165,24 +214,9 @@ fit2 <- poEMirt(
 #> * Expectation-Maximization
 #> * Model converged at iteration 10 : 0.1 sec.
 
-# Same cutpoint estimates!
-summary(fit2, parameter = "alpha") |> 
-  filter(str_detect(index, "\\[\\d+,1,.+"))
-#> * Summarizing following parameters: alpha
-#> # A tibble: 40 × 4
-#>    parameter index     reference estimate
-#>    <chr>     <chr>     <chr>        <dbl>
-#>  1 alpha     [1,1,y1]  [t,j,k]      0.183
-#>  2 alpha     [2,1,y1]  [t,j,k]      0.183
-#>  3 alpha     [3,1,y1]  [t,j,k]      0.183
-#>  4 alpha     [4,1,y1]  [t,j,k]      0.183
-#>  5 alpha     [5,1,y1]  [t,j,k]      0.183
-#>  6 alpha     [6,1,y1]  [t,j,k]      0.183
-#>  7 alpha     [7,1,y1]  [t,j,k]      0.183
-#>  8 alpha     [8,1,y1]  [t,j,k]      0.183
-#>  9 alpha     [9,1,y1]  [t,j,k]      0.183
-#> 10 alpha     [10,1,y1] [t,j,k]      0.183
-#> # ℹ 30 more rows
+# Delta
+fit3$parameter$Delta
+#> [1] 0.0003318495
 ```
 
 ### Estimation of statistical uncertainty
@@ -206,7 +240,7 @@ fit_boot <- poEMirt_uncertainty(
 )
 #> === Parametric bootstrap to estimate statistical uncertainty for poEMirt ===
 #> * Computing 100 bootstraps with 8 threads.....
-#> * DONE! Total time: 18.6 sec.
+#> * DONE! Total time: 18.5 sec.
 
 summary(fit_boot, parameter = "theta", ci = 0.95)
 #> * Summarizing following parameters:  theta
@@ -285,14 +319,10 @@ Using the roll-call vote data of U.S. Supreme Court `Rehnquist` from
 
 ``` r
 data(Rehnquist, package = "MCMCpack")
-
+min_year <- min(Rehnquist$term)
 df <- Rehnquist |> 
   mutate(rcid = row_number()) |> 
   select(-term) |> 
-  mutate(
-    time = factor(time) |> 
-      as.integer()
-  ) |> 
   pivot_longer(
     cols = -c(time, rcid),
     names_to = "judge",
@@ -301,7 +331,7 @@ df <- Rehnquist |>
 head(df)
 #> # A tibble: 6 × 4
 #>    time  rcid judge      vote
-#>   <int> <int> <chr>     <dbl>
+#>   <dbl> <int> <chr>     <dbl>
 #> 1     1     1 Rehnquist     0
 #> 2     1     1 Stevens       1
 #> 3     1     1 O.Connor      0
@@ -318,7 +348,7 @@ df <- df |>
 head(df)
 #> # A tibble: 6 × 6
 #>    time  rcid judge      vote    y1    y0
-#>   <int> <int> <chr>     <dbl> <int> <int>
+#>   <dbl> <int> <chr>     <dbl> <int> <int>
 #> 1     1     1 Rehnquist     0     0     1
 #> 2     1     1 Stevens       1     1     0
 #> 3     1     1 O.Connor      0     0     1
@@ -354,7 +384,6 @@ fit <- poEMirt(
   data = data,
   model = "dynamic",
   constraint = con,
-  theta_std = TRUE,
   control = list(
     verbose = 10
   )
@@ -363,24 +392,35 @@ fit <- poEMirt(
 #> * Setting priors.....DONE!
 #> * Finding best initial values.....DONE!
 #> * Expectation-Maximization
-#> * Model converged at iteration 3 : 0 sec.
+#> * Model converged at iteration 8 : 0 sec.
 
-summary(fit, parameter = "theta")
+summary(fit, parameter = "theta") |> 
+  mutate(
+    judge = str_remove_all(index, "\\[|\\]|,|\\d+"),
+    year = str_extract(index, "\\d+") |> 
+      as.integer(),
+    year = year + min_year - 1
+  ) |> 
+  select(judge, year, estimate) |> 
+  spread(
+    key = "judge",
+    value = "estimate"
+  ) 
 #> * Summarizing following parameters: theta
-#> # A tibble: 99 × 4
-#>    parameter index       reference estimate
-#>    <chr>     <chr>       <chr>        <dbl>
-#>  1 theta     [Breyer,1]  [i,t]       -0.841
-#>  2 theta     [Breyer,2]  [i,t]       -0.856
-#>  3 theta     [Breyer,3]  [i,t]       -0.872
-#>  4 theta     [Breyer,4]  [i,t]       -0.875
-#>  5 theta     [Breyer,5]  [i,t]       -0.870
-#>  6 theta     [Breyer,6]  [i,t]       -0.868
-#>  7 theta     [Breyer,7]  [i,t]       -0.893
-#>  8 theta     [Breyer,8]  [i,t]       -0.891
-#>  9 theta     [Breyer,9]  [i,t]       -0.880
-#> 10 theta     [Breyer,10] [i,t]       -0.863
-#> # ℹ 89 more rows
+#> # A tibble: 11 × 10
+#>     year Breyer Ginsburg Kennedy O.Connor Rehnquist Scalia Souter Stevens Thomas
+#>    <dbl>  <dbl>    <dbl>   <dbl>    <dbl>     <dbl>  <dbl>  <dbl>   <dbl>  <dbl>
+#>  1  1994  -1.43    -1.67   0.752    0.628      1.69   2.45  -1.41   -2.73   2.57
+#>  2  1995  -1.44    -1.67   0.759    0.646      1.68   2.45  -1.42   -2.72   2.56
+#>  3  1996  -1.47    -1.70   0.793    0.667      1.67   2.46  -1.43   -2.70   2.55
+#>  4  1997  -1.47    -1.75   0.821    0.675      1.67   2.46  -1.46   -2.68   2.54
+#>  5  1998  -1.47    -1.79   0.865    0.655      1.68   2.45  -1.51   -2.65   2.54
+#>  6  1999  -1.47    -1.85   0.916    0.628      1.67   2.46  -1.57   -2.62   2.53
+#>  7  2000  -1.50    -1.88   0.941    0.575      1.67   2.46  -1.61   -2.59   2.53
+#>  8  2001  -1.50    -1.90   0.964    0.527      1.65   2.46  -1.65   -2.57   2.53
+#>  9  2002  -1.49    -1.92   0.958    0.494      1.63   2.44  -1.68   -2.55   2.54
+#> 10  2003  -1.47    -1.93   0.948    0.471      1.65   2.42  -1.71   -2.54   2.54
+#> 11  2004  -1.45    -1.94   0.930    0.458      1.66   2.41  -1.72   -2.53   2.55
 ```
 
 #### Categorical
@@ -468,7 +508,7 @@ fit <- poEMirt(
   data = data,
   model = "dynamic",
   constraint = con,
-  theta_std = TRUE, 
+  std_theta = TRUE,
   control = list(
     verbose = 10
   )
@@ -480,7 +520,7 @@ fit <- poEMirt(
 #>   - Iteration 10: eval = 0.000136064
 #>   - Iteration 20: eval = 3.24902e-05
 #>   - Iteration 30: eval = 2.20166e-06
-#> * Model converged at iteration 34 : 6.4 sec.
+#> * Model converged at iteration 34 : 6.5 sec.
 
 # Visualize
 library(ggplot2)
@@ -507,9 +547,6 @@ summary(fit, parameter = "theta") |>
 
 # References
 
-- Bailey, M. A. (2007). “Comparable preference estimates across time and
-  institutions for the court, congress, and presidency”. *American
-  Journal of Political Science*, 51(3), 433-448.
 - Goplerud, M. (2019). “A Multinomial Framework for Ideal Point
   Estimation”. *Political Analysis*, 27(1), 69-89.
 - Martin A.D., Quinn K.M. & Park J.H. (2011). “MCMCpack: Markov Chain

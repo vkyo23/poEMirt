@@ -17,6 +17,7 @@ public:
                        mat alpha,
                        mat beta,
                        mat theta,
+                       double Delta,
                        const std::vector<vec> &unique_categories,
                        const std::vector<vec> &uJ_J,
                        const mat &timemap2,
@@ -29,11 +30,14 @@ public:
                        const mat &B0,
                        const vec &m0,
                        const vec &C0,
-                       const vec &Delta,
-                       const bool &alpha_fix,
-                       const bool &PG_approx,
+                       const double &g0,
+                       const double &h0,
                        const vec &constraint,
+                       const bool &fix_alpha,
+                       const bool &fix_beta,
+                       const bool &estimate_Delta,
                        const bool &std,
+                       const bool &PG_approx,
                        const int &iter,
                        const int &warmup,
                        const int &thin,
@@ -45,7 +49,9 @@ public:
   void draw_alpha();
   void draw_alpha_fixed();
   void draw_beta();
+  void draw_beta_fixed();
   void draw_theta();
+  void draw_Delta();
   void fit();
   List output();
   
@@ -61,11 +67,13 @@ private:
   List alpha_store;
   List beta_store;
   List theta_store;
+  std::vector<double> Delta_store;
   
   mat alpha;
   mat beta;
   mat theta;
   cube Omega;
+  double Delta;
   
   const std::vector<vec> &unique_categories;
   const std::vector<vec> &uJ_J;
@@ -80,12 +88,15 @@ private:
   const mat &B0;
   const vec &m0;
   const vec &C0;
-  const vec &Delta;
+  const double &g0;
+  const double &h0;
   
-  const bool &alpha_fix;
-  const bool &PG_approx;
   const vec &constraint;
+  const bool &fix_alpha;
+  const bool &fix_beta;
+  const bool &estimate_Delta;
   const bool &std;
+  const bool &PG_approx;
   const int &iter;
   const int &warmup;
   const int &thin;

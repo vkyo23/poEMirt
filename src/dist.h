@@ -4,6 +4,9 @@
 #include <Rcpp.h>
 using namespace Rcpp;
 
+double rgamma(double shape, 
+              double rate);
+
 arma::vec rmultinom2(int &size, 
                      arma::vec &prob);
 

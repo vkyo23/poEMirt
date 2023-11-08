@@ -4,6 +4,7 @@
 #' @noRd
 med_impute <- function(x) {
   x[is.na(x) | is.infinite(x)] <- stats::median(x, na.rm = TRUE)
+  x[is.na(x) | is.infinite(x)] <- 0
   return(x)
 }
 
@@ -181,6 +182,9 @@ poEMirt_boot <- function(fit, iter, verbose, save_item_parameters, thread, seed)
     theta_store <- matrix(NA, fit$info$data$size$I, iter)
   } else {
     theta_store <- array(NA, c(fit$info$data$size$I, fit$info$data$size$T, iter))
+    if (fit$info$estimate_Delta) {
+      Delta_store <- rep()
+    }
   }
   if (save_item_parameters) {
     alpha_store <- beta_store <- array(NA, c(fit$info$data$size$J, fit$info$data$size$maxK-1, iter))
@@ -196,8 +200,10 @@ poEMirt_boot <- function(fit, iter, verbose, save_item_parameters, thread, seed)
           data = dd,
           model = fit$info$model,
           constraint = fit$info$constraint,
-          alpha_fix = fit$info$alpha_fix,
-          theta_std = fit$info$theta_std,
+          fix_alpha = fit$info$fix_alpha,
+          fix_beta = fit$info$fix_beta,
+          estimate_Delta = fit$info$estimate_Delta,
+          std_theta = fit$info$std_theta,
           priors = fit$info$priors,
           control = fit$info$control
         )
@@ -206,6 +212,9 @@ poEMirt_boot <- function(fit, iter, verbose, save_item_parameters, thread, seed)
         theta_store[, b] <- fit_boot$parameter$theta
       } else {
         theta_store[, , b] <- fit_boot$parameter$theta
+        if (fit$info$estimate_Delta) {
+          Delta_store[b] <- fit_boot$parameter$Delta
+        }
       }
       if (save_item_parameters) {
         alpha_store[, , b] <- fit_boot$parameter$alpha
@@ -239,14 +248,19 @@ poEMirt_boot <- function(fit, iter, verbose, save_item_parameters, thread, seed)
           data = dd,
           model = fit$info$model,
           constraint = fit$info$constraint,
-          alpha_fix = fit$info$alpha_fix,
-          theta_std = fit$info$theta_std,
+          fix_alpha = fit$info$fix_alpha,
+          fix_beta = fit$info$fix_beta,
+          estimate_Delta = fit$info$estimate_Delta,
+          std_theta = fit$info$std_theta,
           priors = fit$info$priors,
           control = fit$info$control
         )
       )
       LL <- list()
       LL$theta <- fit_boot$parameter$theta
+      if (fit$info$estimate_Delta) {
+        LL$Delta <- fit_boot$parameter$Delta
+      }
       if (save_item_parameters) {
         LL$alpha <- fit_boot$parameter$alpha
         LL$beta <- fit_boot$parameter$beta
@@ -258,6 +272,9 @@ poEMirt_boot <- function(fit, iter, verbose, save_item_parameters, thread, seed)
         theta_store[, b] <- fit_foreach[[b]]$theta
       } else {
         theta_store[, , b] <- fit_foreach[[b]]$theta
+        if (fit$info$estimate_Delta) {
+          Delta_store[b] <- fit_foreach[[b]]$Delta
+        }
       }
       if (save_item_parameters) {
         alpha_store[, , b] <- fit_foreach[[b]]$alpha
@@ -270,6 +287,9 @@ poEMirt_boot <- function(fit, iter, verbose, save_item_parameters, thread, seed)
   L <- list(
     theta = theta_store
   )
+  if (fit$info$model == "dynamic" & fit$info$estimate_Delta) {
+    L$Delta <- Delta_store
+  }
   if (save_item_parameters) {
     L$alpha <- alpha_store
     L$beta <- beta_store

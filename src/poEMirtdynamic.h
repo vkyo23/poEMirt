@@ -15,6 +15,7 @@ public:
                  mat alpha_old,
                  mat beta_old,
                  mat theta_old,
+                 double Delta,
                  const std::vector<vec> &unique_categories,
                  const std::vector<vec> &uJ_J,
                  const mat &timemap2,
@@ -27,9 +28,12 @@ public:
                  const mat &B0,
                  const vec &m0,
                  const vec &C0,
-                 const vec &Delta,
+                 const double &g0,
+                 const double &h0,
                  const vec &constraint,
-                 const bool &alpha_fix,
+                 const bool &fix_alpha,
+                 const bool &fix_beta,
+                 const bool &estimate_Delta,
                  const bool &std,
                  const int &maxit,
                  const int &verbose,
@@ -41,7 +45,9 @@ public:
   mat update_alpha();
   mat update_alpha_fixed();
   mat update_beta();
+  mat update_beta_fixed();
   mat update_theta();
+  void update_Delta();
   void calc_ll();
   void convcheck(int g);
   void fit();
@@ -62,6 +68,7 @@ private:
   mat theta;
   mat theta_old;
   cube Omega;
+  double Delta;
   
   const std::vector<vec> &unique_categories;
   const std::vector<vec> &uJ_J;
@@ -76,10 +83,13 @@ private:
   const mat &B0;
   const vec &m0;
   const vec &C0;
-  const vec &Delta;
+  const double &g0;
+  const double &h0;
   
-  const bool &alpha_fix;
   const vec &constraint;
+  const bool &fix_alpha;
+  const bool &fix_beta;
+  const bool &estimate_Delta;
   const bool &std;
   const int &maxit;
   const int &verbose;
